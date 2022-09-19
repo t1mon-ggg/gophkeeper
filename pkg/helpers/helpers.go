@@ -6,6 +6,25 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"syscall"
+
+	"golang.org/x/term"
+)
+
+var (
+	termState *term.State
+	cmds      []string = []string{
+		"get",
+		"roster",
+		"revoke",
+		"confirm",
+		"list",
+		"insert",
+		"delete",
+		"view",
+		"edit",
+		"status",
+	}
 )
 
 // GenSecretKey - generates a random cryptographic sequence of bytes
@@ -39,4 +58,38 @@ func CompareHash(hashed string, content []byte) bool {
 	h.Write(content)
 	hash := h.Sum(nil)
 	return strings.EqualFold(hashed, fmt.Sprintf("%x", hash))
+}
+
+// ReadSecret - read secret from stdin in security mode
+func ReadSecret(msg string) (string, error) {
+	fmt.Print(msg)
+	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return "", err
+	}
+	secret := string(bytePassword)
+	return secret, nil
+}
+
+func SaveTermState() {
+	oldState, err := term.GetState(int(os.Stdin.Fd()))
+	if err != nil {
+		return
+	}
+	termState = oldState
+}
+
+func RestoreTermState() {
+	if termState != nil {
+		term.Restore(int(os.Stdin.Fd()), termState)
+	}
+}
+
+func FindCommand(in string) (string, bool) {
+	for _, cmd := range cmds {
+		if strings.Contains(in, cmd) {
+			return cmd, true
+		}
+	}
+	return "", false
 }

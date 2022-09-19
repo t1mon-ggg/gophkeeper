@@ -5,12 +5,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/t1mon-ggg/gophkeeper/pkg/client/storage/secrets"
-	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
+	"github.com/t1mon-ggg/gophkeeper/pkg/helpers"
 )
 
 func TestClientStorage(t *testing.T) {
-	logger := zerolog.New().WithPrefix("client-storage")
-	k := New(logger)
+	k := New()
 	up := secrets.NewUserPass("user", "password")
 	otp := secrets.NewOTP("TOTP", "https://localhost.ltd", "SeCrEt", "1234", "abcd")
 	cc, err := secrets.NewCC("1234123412341234", "Mr.CardHolder", "01/23", 123)
@@ -100,14 +99,7 @@ func TestClientStorage(t *testing.T) {
 		saved, err = k.Save()
 		require.NoError(t, err)
 		require.NotEmpty(t, saved)
+		require.Equal(t, k.HashSum(), helpers.GenHash(saved))
 
-	})
-	t.Run("test loading of secrets", func(t *testing.T) {
-		kk := New(logger)
-		err := kk.Load(saved)
-		require.NoError(t, err)
-		require.Equal(t, k.secrets, kk.secrets)
-		// t.Log(k.secrets)
-		// t.Log(kk.secrets)
 	})
 }

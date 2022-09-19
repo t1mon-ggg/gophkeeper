@@ -2,7 +2,9 @@ package zerolog
 
 import (
 	"fmt"
+	"io"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -10,26 +12,40 @@ import (
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging"
 )
 
+var (
+	once sync.Once
+	_zl  *zeroLogger
+)
+
 type zeroLogger struct {
 	logger zerolog.Logger
 }
 
-func New() *zeroLogger {
-	log := new(zeroLogger)
-	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-	log.logger = zerolog.New(output).With().Timestamp().Logger()
-	return log
+// New - new logger with custom destination(s). logger print pretty string to os.Stderr and json to out
+func New(out ...io.Writer) logging.Logger {
+	once.Do(func() {
+		_zl = new(zeroLogger)
+		pretty := zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}
+		out = append(out, pretty)
+		output := io.MultiWriter(out...)
+		_zl.logger = zerolog.New(output).With().Timestamp().Logger()
+		_zl.Info(nil, "logger successfully initialized")
+	})
+	return _zl
 }
 
+// Print - print log without logging level
 func (log *zeroLogger) Print(err error, args ...any) {
 	msg := fmt.Sprint(args...)
 	log.logger.Log().Err(err).Msg(msg)
 }
 
+// Printf - print log without logging level in custom format
 func (log *zeroLogger) Printf(format string, err error, args ...any) {
 	log.logger.Log().Err(err).Msgf(format, args...)
 }
 
+// Trace - print log with TRACE logging level
 func (log *zeroLogger) Trace(err error, args ...any) {
 	msg := fmt.Sprint(args...)
 	log.logger.Trace().Err(err).Msg(msg)

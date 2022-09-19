@@ -15,13 +15,13 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	logger := New()
 	test := struct {
 		name string
 	}{
 		name: "logger creation",
 	}
 	t.Run(test.name, func(t *testing.T) {
-		logger := New()
 		require.NotNil(t, logger)
 	})
 }
@@ -549,11 +549,11 @@ func Test_zeroLogger_SetLevel(t *testing.T) {
 			arg:  logging.PanicLevel,
 		},
 	}
-	log := New()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			log.SetLevel(tt.arg)
-			require.Equal(t, tt.arg, log.GetLevel())
+			logger := New()
+			logger.SetLevel(tt.arg)
+			require.Equal(t, tt.arg, logger.GetLevel())
 		})
 	}
 }

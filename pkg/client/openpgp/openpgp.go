@@ -1,34 +1,33 @@
 package openpgp
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"strings"
+	"sync"
 	"time"
 
 	pgpcrypto "github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/caarlos0/env"
+	"github.com/denisbrodbeck/machineid"
 
 	"github.com/t1mon-ggg/gophkeeper/pkg/helpers"
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging"
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
 )
 
-type PGPFile struct {
-	filename string
-	keyring  *OpenPGP
-	data     []byte
-	buf      *bytes.Buffer
+type passpharse struct {
+	PP string `env:"KEEPER_PGP_PASSPHRASE"`
 }
 
 var (
-	log    logging.Logger
-	errPGP = errors.New("openpgp failed")
+	log      logging.Logger
+	errPGP   = errors.New("openpgp failed")
+	once     sync.Once
+	_keyring *OpenPGP
 )
-
-func init() {
-	log = zerolog.New().WithPrefix("openpgp")
-}
 
 type OpenPGP struct {
 	Public     *pgpcrypto.KeyRing
@@ -36,21 +35,80 @@ type OpenPGP struct {
 	passphrase []byte
 }
 
-func New(passphrase string) (*OpenPGP, error) {
+func New() (*OpenPGP, error) {
 	var err error
-	p := new(OpenPGP)
-	p.passphrase = []byte(passphrase)
-	p.Private, err = pgpcrypto.NewKeyRing(nil)
+	once.Do(func() {
+		log = zerolog.New().WithPrefix("crypto")
+		pp := new(passpharse)
+		err = env.Parse(pp)
+		if err != nil {
+			log.Error(err, "read environment failed")
+		}
+		if _, ok := os.LookupEnv("KEEPER_PGP_PASSPHRASE"); pp.PP == "" && !ok {
+			p, err := helpers.ReadSecret("Enter pgp passphrase:")
+			if err != nil {
+				log.Warn(err, "read passphrase failed")
+			}
+			pp.PP = p
+		}
+		fmt.Println()
+		p := new(OpenPGP)
+		p.passphrase = []byte(pp.PP)
+		p.Private, err = pgpcrypto.NewKeyRing(nil)
+		if err != nil {
+			log.Debug(err, "empty private keyring creation failed")
+			return
+		}
+		p.Public, err = pgpcrypto.NewKeyRing(nil)
+		if err != nil {
+			log.Debug(err, "empty public keyring creation failed")
+			return
+		}
+		_keyring = p
+		name, err := machineid.ID()
+		if err != nil {
+			log.Fatal(err, "get machineID failed")
+		}
+		if !helpers.FileExists(fmt.Sprintf("./openpgp/%s.gpg", name)) || !helpers.FileExists(fmt.Sprintf("./openpgp/%s.pub", name)) {
+			err := os.MkdirAll("./openpgp", 0755)
+			log.Warn(err, "openpgp folder creation failed")
+			err = p.GeneratePair()
+			if err != nil {
+				log.Fatal(err, "encryption subsystem failed")
+			}
+		} else {
+			err := p.ReadFolder(name)
+			if err != nil {
+				log.Fatal(err, "encryption subsystem failed")
+			}
+		}
+		folder, err := os.ReadDir("./openpgp/")
+		if err != nil {
+			log.Error(err, "read openpgp folder failed")
+		}
+		for _, file := range folder {
+			if file.IsDir() {
+				continue
+			}
+			if strings.Contains(file.Name(), name) {
+				continue
+			}
+			f, err := os.Open(fmt.Sprintf("./openpgp/%s", file.Name()))
+			if err != nil {
+				log.Warn(err, "public key open failed")
+			}
+			buf, err := io.ReadAll(f)
+			if err != nil {
+				log.Warn(err, "public key read failed")
+			}
+			err = p.AddPublicKey(buf)
+			log.Warn(err, "public key add failed")
+		}
+	})
 	if err != nil {
-		log.Debug(err, "empty private keyring creation failed")
 		return nil, errPGP
 	}
-	p.Public, err = pgpcrypto.NewKeyRing(nil)
-	if err != nil {
-		log.Debug(err, "empty public keyring creation failed")
-		return nil, errPGP
-	}
-	return p, nil
+	return _keyring, nil
 }
 
 func (p *OpenPGP) AddPublicKey(armored []byte) error {
@@ -102,13 +160,27 @@ func (p *OpenPGP) AddPrivateKey(armored []byte) error {
 	return nil
 }
 
-func (p *OpenPGP) GeneratePair(name, email string) error {
+func (p *OpenPGP) GeneratePair() error {
+	name, err := machineid.ID()
+	if err != nil {
+		log.Fatal(err, "get machineID failed")
+	}
+	var email string
+	fmt.Print("Ente email address:")
+	_, err = fmt.Scanln(&email)
+	if err != nil || email == "" {
+		log.Warn(err, "email reading failed. using default")
+		email = fmt.Sprintf("%s@localhost", name)
+	}
 	key, err := pgpcrypto.GenerateKey(name, email, "x25519", 0)
 	if err != nil {
 		log.Debug(err, "openpgp key pair generation failed")
 		return errPGP
 	}
 	defer key.ClearPrivateParams()
+	if len(p.passphrase) == 0 {
+		log.Warn(nil, "passphrase is blank. this is not secure")
+	}
 	locked, err := key.Lock([]byte(p.passphrase))
 	if err != nil {
 		log.Debug(err, "unable to lock openpgp key")
@@ -122,7 +194,7 @@ func (p *OpenPGP) GeneratePair(name, email string) error {
 		}
 	}
 	keyfilename := fmt.Sprintf("./openpgp/%s.gpg", name)
-	pubfilename := fmt.Sprintf("./openpgp/%s.gpg.pub", name)
+	pubfilename := fmt.Sprintf("./openpgp/%s.pub", name)
 	keyFile, err := os.OpenFile(keyfilename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		log.Debug(err, "openpgp private key file creation failed")
@@ -159,8 +231,47 @@ func (p *OpenPGP) GeneratePair(name, email string) error {
 	}
 	return nil
 }
+func (p *OpenPGP) ReadFolder(name string) error {
+	pubfilename := fmt.Sprintf("./openpgp/%s.pub", name)
+	privfilename := fmt.Sprintf("./openpgp/%s.gpg", name)
+	pub, err := os.Open(pubfilename)
+	if err != nil {
+		log.Debug(err, "public key file open failed")
+		return errPGP
+	}
+	defer pub.Close()
+	priv, err := os.Open(privfilename)
+	if err != nil {
+		log.Debug(err, "private key file open failed")
+		return errPGP
+	}
+	defer priv.Close()
+	pubkey, err := io.ReadAll(pub)
+	if err != nil {
+		log.Debug(err, "public key read failed")
+		return errPGP
+	}
+	privkey, err := io.ReadAll(priv)
+	if err != nil {
+		log.Debug(err, "public key read failed")
+		return errPGP
+	}
+	err = p.AddPublicKey(pubkey)
+	if err != nil {
+		return errPGP
+	}
+	err = p.AddPrivateKey(privkey)
+	if err != nil {
+		return errPGP
+	}
+	return nil
+}
 
-func (p *OpenPGP) EncryptWithKeys(data []byte) (*pgpcrypto.PGPMessage, error) {
+func (p *OpenPGP) EncryptWithKeys(data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		log.Warn(errors.New("encryptable data is missing"), "nothing to encrypt")
+		return nil, errPGP
+	}
 	if !p.Public.CanEncrypt() {
 		log.Debug(nil, "pgp keyring can not be used for encryption")
 		return nil, errPGP
@@ -171,11 +282,24 @@ func (p *OpenPGP) EncryptWithKeys(data []byte) (*pgpcrypto.PGPMessage, error) {
 		log.Debug(err, "data encryption failed")
 		return nil, errPGP
 	}
-	return encryptedMsg, nil
+	armor, err := encryptedMsg.GetArmored()
+	if err != nil {
+		log.Debug(err, "data encryption failed")
+		return nil, errPGP
+	}
+	return []byte(armor), nil
 }
 
 func (p *OpenPGP) DecryptWithKey(data []byte) ([]byte, error) {
-	encryptedMsg := pgpcrypto.NewPGPMessage(data)
+	if len(data) == 0 {
+		log.Warn(errors.New("decryptable data is missing"), "nothing to encrypt")
+		return nil, errPGP
+	}
+	encryptedMsg, err := pgpcrypto.NewPGPMessageFromArmored(string(data))
+	if err != nil {
+		log.Debug(err, "read armorred message failed")
+		return nil, errPGP
+	}
 	clear, err := p.Private.Decrypt(encryptedMsg, p.Public, time.Now().Unix())
 	if err != nil {
 		log.Debug(err, "data decryption failed")
