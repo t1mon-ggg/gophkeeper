@@ -28,7 +28,6 @@ type observer struct {
 
 type channels struct {
 	log     logging.Logger
-	signal  chan struct{}
 	clients []*wsClients
 }
 
@@ -154,7 +153,14 @@ func New(c echo.Context) error {
 
 func (o *observer) Start() error {
 	ch := _msgs.Add(o.vault, o.token)
-	defer o.ws.Close()
+	defer func() {
+		defer o.ws.Close()
+		err := o.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+		if err != nil {
+			o.log.Error(err, "write close error")
+			return
+		}
+	}()
 	for {
 		select {
 		case <-o.signal:
@@ -189,5 +195,4 @@ func (o *observer) Start() error {
 func (o *observer) Close() {
 	o.log.Debug(nil, "websocket hadler closing")
 	close(o.signal)
-	close(_msgs.signal)
 }

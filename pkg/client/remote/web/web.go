@@ -348,7 +348,6 @@ func (c *webclient) NewStream() error {
 				case "pong":
 					c.log().Trace(nil, msg)
 				default:
-					log.Println("!!!!!!!!!!!!!!!!!!!!!")
 					m := models.Message{}
 					err := json.Unmarshal(message, &m)
 					if err != nil {

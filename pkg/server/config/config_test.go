@@ -77,7 +77,7 @@ func TestConfig_SetByFlags(t *testing.T) {
 	}{
 		{
 			name: "set up flags with warn log level",
-			args: []string{"-http", "127.0.0.0:8080", "-grpc", "192.168.0.1:5555", "-loglevel", "warn", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
+			args: []string{"-http", "127.0.0.0:8080", "-loglevel", "warn", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
 			want: Config{
 				WebBind: "127.0.0.0:8080",
 				// GRPCBind: "192.168.0.1:5555",
@@ -88,7 +88,7 @@ func TestConfig_SetByFlags(t *testing.T) {
 		},
 		{
 			name: "set up flags with fatal log level",
-			args: []string{"-http", "127.0.0.0:8080", "-grpc", "192.168.0.1:5555", "-loglevel", "fatal", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
+			args: []string{"-http", "127.0.0.0:8080", "-loglevel", "fatal", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
 			want: Config{
 				WebBind: "127.0.0.0:8080",
 				// GRPCBind: "192.168.0.1:5555",
@@ -99,7 +99,7 @@ func TestConfig_SetByFlags(t *testing.T) {
 		},
 		{
 			name: "set up flags with panic log level",
-			args: []string{"-http", "127.0.0.0:8080", "-grpc", "192.168.0.1:5555", "-loglevel", "panic", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
+			args: []string{"-http", "127.0.0.0:8080", "-loglevel", "panic", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
 			want: Config{
 				WebBind: "127.0.0.0:8080",
 				// GRPCBind: "192.168.0.1:5555",
@@ -110,7 +110,7 @@ func TestConfig_SetByFlags(t *testing.T) {
 		},
 		{
 			name: "set up flags with debug log level",
-			args: []string{"-http", "127.0.0.0:8080", "-grpc", "192.168.0.1:5555", "-loglevel", "debug", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
+			args: []string{"-http", "127.0.0.0:8080", "-loglevel", "debug", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
 			want: Config{
 				WebBind: "127.0.0.0:8080",
 				// GRPCBind: "192.168.0.1:5555",
@@ -121,7 +121,7 @@ func TestConfig_SetByFlags(t *testing.T) {
 		},
 		{
 			name: "set up flags with info log level",
-			args: []string{"-http", "127.0.0.0:8080", "-grpc", "192.168.0.1:5555", "-loglevel", "info", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
+			args: []string{"-http", "127.0.0.0:8080", "-loglevel", "info", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
 			want: Config{
 				WebBind: "127.0.0.0:8080",
 				// GRPCBind: "192.168.0.1:5555",
@@ -132,7 +132,7 @@ func TestConfig_SetByFlags(t *testing.T) {
 		},
 		{
 			name: "set up flags with error log level",
-			args: []string{"-http", "127.0.0.0:8080", "-grpc", "192.168.0.1:5555", "-loglevel", "error", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
+			args: []string{"-http", "127.0.0.0:8080", "-loglevel", "error", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
 			want: Config{
 				WebBind: "127.0.0.0:8080",
 				// GRPCBind: "192.168.0.1:5555",
@@ -143,7 +143,7 @@ func TestConfig_SetByFlags(t *testing.T) {
 		},
 		{
 			name: "set up flags with trace log level",
-			args: []string{"-http", "127.0.0.0:8080", "-grpc", "192.168.0.1:5555", "-loglevel", "trace", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
+			args: []string{"-http", "127.0.0.0:8080", "-loglevel", "trace", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
 			want: Config{
 				WebBind: "127.0.0.0:8080",
 				// GRPCBind: "192.168.0.1:5555",
@@ -154,7 +154,7 @@ func TestConfig_SetByFlags(t *testing.T) {
 		},
 		{
 			name: "set up flags with wrong log level",
-			args: []string{"-http", "127.0.0.0:8080", "-grpc", "192.168.0.1:5555", "-loglevel", "bla", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
+			args: []string{"-http", "127.0.0.0:8080", "-loglevel", "bla", "-config", "remove_me.json", "-dsn", "postgresql://user:password@netloc:port/dbname?param1=value1"},
 			want: Config{
 				WebBind: "127.0.0.0:8080",
 				// GRPCBind: "192.168.0.1:5555",

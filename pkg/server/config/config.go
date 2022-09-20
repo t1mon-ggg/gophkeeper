@@ -86,8 +86,8 @@ func (c *Config) SetByEnv() *Config {
 
 //Configuring flags
 var (
-	webBindFlag  = flag.String("http", "", "Set up web address binding.\nExample: -http=\":8443\"")
-	grpcBindFlag = flag.String("grpc", "", "Set up grpc address binding.\nExample: -grpc=\":3200\"")
+	webBindFlag = flag.String("http", "", "Set up web address binding.\nExample: -http=\":8443\"")
+	// grpcBindFlag = flag.String("grpc", "", "Set up grpc address binding.\nExample: -grpc=\":3200\"")
 	logLevelFlag = flag.String("loglevel", "debug", "Set up logging level.\nExample: -loglevel=info\nAvailible level are trace, debug, info, warn, error, fatal, panic.")
 	dsn          = flag.String("dsn", "", "Set up postgre dsn connection string\nExample: -dsn=postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]")
 	config       = flag.String("config", "", "Set up configuration file path.\n Example: -config=config.json")
