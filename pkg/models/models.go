@@ -13,9 +13,29 @@ type User struct {
 
 // Action -
 type Action struct {
-	Action   string    //
-	Checksum string    //
-	Sign     string    //
-	ip       *net.IP   //
-	date     time.Time //
+	Action   string    `json:"action"`   //
+	Checksum string    `json:"checksum"` //
+	IP       *net.IP   `json:"ip"`       //
+	Date     time.Time `json:"time"`     //
+}
+
+type Content struct {
+	Payload string `json:"payload"`
+	Hash    string `json:"hashsum"`
+}
+
+type Version struct {
+	Date time.Time `json:"time"`
+	Hash string    `json:"hashsum"`
+}
+
+type PGP struct {
+	Date      time.Time `json:"time,omitempty"`
+	Publickey string    `json:"publickey"`
+	Confirmed bool      `json:"confirmed,omitempty"`
+}
+
+type Message struct {
+	Text    string `json:"text"`
+	Content string `json:"content"`
 }

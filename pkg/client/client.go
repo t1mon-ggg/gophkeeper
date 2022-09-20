@@ -46,9 +46,6 @@ func New() *KeeperClient {
 			}
 			kc.config.Username = u
 		}
-	}
-
-	if kc.config.Mode != "standalone" {
 		if len(kc.config.Password) == 0 {
 			kc.log.Debug(nil, "password not set")
 			pp, err := helpers.ReadSecret("Enter password: ")

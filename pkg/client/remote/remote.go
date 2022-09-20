@@ -1,0 +1,22 @@
+package remote
+
+import "github.com/t1mon-ggg/gophkeeper/pkg/models"
+
+type Actions interface {
+	Login(username, password, public string) error
+	Register(username, password, public string) error
+	NewStream() error
+
+	Push(payload, hashsum string) error
+	Pull(checksum string) ([]byte, error)
+	Versions() ([]models.Version, error)
+	GetLogs() ([]models.Action, error)
+
+	ListPGP() ([]models.PGP, error)
+	AddPGP(publickey string) error
+	ConfirmPGP(publickey string) error
+	RevokePGP(publickey string) error
+
+	Close() error
+	Delete() error
+}

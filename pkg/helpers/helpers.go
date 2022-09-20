@@ -3,11 +3,17 @@ package helpers
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"strings"
 	"syscall"
+	"time"
 
+	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
 	"golang.org/x/term"
 )
 
@@ -24,6 +30,8 @@ var (
 		"view",
 		"edit",
 		"status",
+		"rollback",
+		"timemachine",
 	}
 )
 
@@ -92,4 +100,66 @@ func FindCommand(in string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func GetNameFromToken(token string) (string, error) {
+	log := zerolog.New().WithPrefix("helper")
+	type p struct {
+		Name string `json:"name"`
+		Exp  int64  `json:"exp"`
+	}
+	tt := strings.Split(token, ".")
+	if len(tt) != 3 {
+		log.Debug(nil, "token parse error")
+		return "", errors.New("invalid token")
+	}
+	payload, err := base64.RawStdEncoding.DecodeString(tt[1])
+	if err != nil {
+		log.Debug(err, "base64 decode error")
+		return "", err
+	}
+	u := new(p)
+	err = json.Unmarshal(payload, u)
+	if err != nil {
+		log.Debug(err, "json unmarshal error")
+		return "", err
+	}
+	return u.Name, nil
+}
+
+func GetExpirationFromToken(token string) (*time.Time, error) {
+	log := zerolog.New().WithPrefix("helper")
+	type p struct {
+		Name string `json:"name"`
+		Exp  int64  `json:"exp"`
+	}
+	tt := strings.Split(token, ".")
+	if len(tt) != 3 {
+		log.Debug(nil, "token parse error")
+		return nil, errors.New("invalid token")
+	}
+	payload, err := base64.RawStdEncoding.DecodeString(tt[1])
+	if err != nil {
+		log.Debug(err, "base64 decode error")
+		return nil, err
+	}
+	u := new(p)
+	err = json.Unmarshal(payload, u)
+	if err != nil {
+		log.Debug(err, "json unmarshal error")
+		return nil, err
+	}
+	t := time.Unix(u.Exp, 0)
+	return &t, nil
+}
+
+// IsFlagPassed - checking the using of the flag
+func IsFlagPassed(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
 }

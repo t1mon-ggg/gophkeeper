@@ -17,12 +17,10 @@ import (
 
 	"github.com/t1mon-ggg/gophkeeper/pkg/client/storage"
 	"github.com/t1mon-ggg/gophkeeper/pkg/client/storage/secrets"
+	"github.com/t1mon-ggg/gophkeeper/pkg/helpers"
 )
 
 func (c *CLI) save() {
-	if c.config.Mode != "standalone" {
-		fmt.Println("todo save to remote")
-	}
 	buf, err := c.storage.Save()
 	if err != nil {
 		if errors.Is(err, storage.ErrHashValid) {
@@ -47,6 +45,13 @@ func (c *CLI) save() {
 	if err != nil {
 		c.log().Error(err, "write to file failed")
 		return
+	}
+	if c.config.Mode != "standalone" {
+		err := c.api.Push(string(msg), c.storage.HashSum())
+		if err != nil {
+			c.log().Error(err, "push vault failed")
+			return
+		}
 	}
 }
 
@@ -281,7 +286,18 @@ func (c *CLI) delete(name string) {
 }
 
 func (c *CLI) status() {
-	fmt.Println("todo")
+	fmt.Println()
+	fmt.Printf("Current execution mode is %s\n", c.config.Mode)
+	fmt.Printf("Current vault hash is %s\n", c.storage.HashSum())
+	if c.config.Mode == "standalone" {
+		return
+	}
+	if c.api != nil {
+		fmt.Println("API client connected")
+	}
+	fmt.Printf("Remote endpoint is %s \n", c.config.RemoteHTTP)
+	fmt.Printf("Remote vault name is %s \n", c.config.Username)
+	fmt.Println()
 }
 
 func (c *CLI) view() {
@@ -291,4 +307,177 @@ func (c *CLI) view() {
 		return
 	}
 	fmt.Println(string(cfg))
+}
+
+func (c *CLI) confirm(checksum string) {
+	lst, err := c.api.ListPGP()
+	if err != nil {
+		c.log().Error(err, "pgp public key list can not be retrieved")
+		return
+	}
+	if len(lst) == 0 {
+		fmt.Println("no keys found")
+		return
+	}
+	for _, key := range lst {
+		hash := helpers.GenHash([]byte(key.Publickey))
+		if hash == checksum {
+			c.api.ConfirmPGP(key.Publickey)
+			c.crypto.AddPublicKey([]byte(key.Publickey))
+			buf, err := c.storage.ReEncrypt()
+			if err != nil {
+				c.log().Error(err, "export failed")
+				return
+			}
+			f, err := os.OpenFile(c.config.Storage, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+			if err != nil {
+				c.log().Error(err, "open file failed")
+				return
+			}
+			defer f.Close()
+			msg, err := c.crypto.EncryptWithKeys(buf)
+			if err != nil {
+				c.log().Error(err, "encrypting failed")
+				return
+			}
+			_, err = f.Write(msg)
+			if err != nil {
+				c.log().Error(err, "write to file failed")
+				return
+			}
+			err = c.api.Push(string(msg), c.storage.HashSum())
+			if err != nil {
+				c.log().Error(err, "push vault failed")
+				return
+			}
+		}
+	}
+}
+
+func (c *CLI) revoke(checksum string) {
+	lst, err := c.api.ListPGP()
+	if err != nil {
+		c.log().Error(err, "pgp public key list can not be retrieved")
+		return
+	}
+	if len(lst) == 0 {
+		fmt.Println("no keys found")
+		return
+	}
+	for _, key := range lst {
+		hash := helpers.GenHash([]byte(key.Publickey))
+		if hash == checksum {
+			c.api.RevokePGP(key.Publickey)
+		}
+	}
+	lst, err = c.api.ListPGP()
+	if err != nil {
+		c.log().Error(err, "pgp public key list can not be retrieved")
+		return
+	}
+	if len(lst) == 0 {
+		fmt.Println("no keys found")
+		return
+	}
+	newlist := []string{}
+	for _, key := range lst {
+		newlist = append(newlist, key.Publickey)
+	}
+	err = c.crypto.ReloadPublicKeys(newlist)
+	if err != nil {
+		c.log().Error(err, "revoke failed")
+		return
+	}
+	buf, err := c.storage.ReEncrypt()
+	if err != nil {
+		c.log().Error(err, "export failed")
+		return
+	}
+	f, err := os.OpenFile(c.config.Storage, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+	if err != nil {
+		c.log().Error(err, "open file failed")
+		return
+	}
+	defer f.Close()
+	msg, err := c.crypto.EncryptWithKeys(buf)
+	if err != nil {
+		c.log().Error(err, "encrypting failed")
+		return
+	}
+	_, err = f.Write(msg)
+	if err != nil {
+		c.log().Error(err, "write to file failed")
+		return
+	}
+	err = c.api.Push(string(msg), c.storage.HashSum())
+	if err != nil {
+		c.log().Error(err, "push vault failed")
+		return
+	}
+}
+
+func (c *CLI) roster() {
+	lst, err := c.api.ListPGP()
+	if err != nil {
+		c.log().Error(err, "pgp public key list can not be retrieved")
+		return
+	}
+	if len(lst) == 0 {
+		fmt.Println("no keys found")
+		return
+	}
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.AppendHeader(table.Row{"#", "Date", "CheckSum", "Confirmed", "Armor"})
+	i := 1
+	for _, v := range lst {
+		hash := helpers.GenHash([]byte(v.Publickey))
+		t.AppendRows([]table.Row{
+			{i, v.Date.Format(time.RFC822), hash, v.Confirmed, v.Publickey},
+		})
+		t.AppendSeparator()
+		i++
+	}
+	t.SetStyle(table.StyleColoredBright)
+	t.Render()
+}
+
+func (c *CLI) rollback(hash string) {
+	v, err := c.api.Pull(hash)
+	if err != nil {
+		c.log().Error(err, "pull for rollback failed")
+	}
+	buf, err := c.crypto.DecryptWithKey(v)
+	if err != nil {
+		c.log().Error(err, "decryption for rollback failed")
+	}
+	err = c.storage.Load(buf)
+	if err != nil {
+		c.log().Error(err, "rollback failed")
+	}
+}
+
+func (c *CLI) timemachine() {
+	lst, err := c.api.Versions()
+	if err != nil {
+		c.log().Error(err, "file to get version history")
+		return
+	}
+	if len(lst) == 0 {
+		fmt.Println("no versions found")
+		return
+	}
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.AppendHeader(table.Row{"#", "Date", "CheckSum"})
+	i := 1
+	for _, v := range lst {
+		t.AppendRows([]table.Row{
+			{i, v.Date.Format(time.RFC822), v.Hash},
+		})
+		t.AppendSeparator()
+		i++
+	}
+	t.SetStyle(table.StyleColoredBright)
+	t.Render()
 }

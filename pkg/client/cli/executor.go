@@ -22,6 +22,9 @@ func (c *CLI) executor(in string) {
 		c.save()
 	case "quit":
 		c.save()
+		if c.config.Mode != "standalone" {
+			c.api.Close()
+		}
 		livePrefixState.livePrefix = "quit> "
 		c.wg.Done()
 	case "..":
@@ -40,21 +43,35 @@ func (c *CLI) executor(in string) {
 		line := strings.Split(in, " ")
 		if cmd, ok := helpers.FindCommand(in); ok {
 			switch cmd {
+			case "timemachine":
+				if livePrefixState.livePrefix == "history> " {
+					c.timemachine()
+					return
+				} else {
+					fmt.Println("no such command")
+				}
+			case "rollback":
+				if livePrefixState.livePrefix == "history> " {
+					c.rollback(line[1])
+					return
+				} else {
+					fmt.Println("no such command")
+				}
 			case "roster":
 				if livePrefixState.livePrefix == "user> " {
-					fmt.Println("todo something here")
+					c.roster()
 				} else {
 					fmt.Println("no such command")
 				}
 			case "revoke":
 				if livePrefixState.livePrefix == "user> " {
-					fmt.Println("todo something here")
+					c.revoke(line[1])
 				} else {
 					fmt.Println("no such command")
 				}
 			case "confirm":
 				if livePrefixState.livePrefix == "user> " {
-					fmt.Println("todo something here")
+					c.confirm(line[1])
 				} else {
 					fmt.Println("no such command")
 				}
@@ -92,18 +109,8 @@ func (c *CLI) executor(in string) {
 				} else {
 					fmt.Println("no such command")
 				}
-			case "version":
-				if livePrefixState.livePrefix == "config> " {
-					c.view()
-				} else {
-					fmt.Println("no such command")
-				}
 			case "status":
 				if livePrefixState.livePrefix == ">>> " || livePrefixState.livePrefix == "" {
-					if c.config.Mode == "standalone" {
-						c.log().Info(nil, "status not availible. standalone mode active")
-						return
-					}
 					c.status()
 					return
 				} else {

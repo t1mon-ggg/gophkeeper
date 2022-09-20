@@ -32,6 +32,7 @@ func init() {
 
 type Storage interface {
 	Save() ([]byte, error)
+	ReEncrypt() ([]byte, error)
 	Load(b []byte) error
 	InsertSecret(name, description string, secret Secret) Storage
 	DeleteSecret(name string) Storage
@@ -86,9 +87,26 @@ func (k *keeper) Save() ([]byte, error) {
 	}
 	hash := helpers.GenHash(buf.Bytes())
 	if hash == k.HashSum() {
-		k.logger.Info(nil, "hashsum identical. skip loading")
+		k.logger.Info(nil, "hashsum identical. skipping...")
 		return []byte{}, ErrHashValid
 	}
+	k.hashsum = hash
+	return buf.Bytes(), nil
+}
+
+func (k *keeper) ReEncrypt() ([]byte, error) {
+	if len(k.secrets) == 0 {
+		return []byte{}, nil
+	}
+	k.rwMutex.RLock()
+	defer k.rwMutex.RUnlock()
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(k.secrets)
+	if err != nil {
+		return []byte{}, err
+	}
+	hash := helpers.GenHash(buf.Bytes())
 	k.hashsum = hash
 	return buf.Bytes(), nil
 }
@@ -96,7 +114,7 @@ func (k *keeper) Save() ([]byte, error) {
 func (k *keeper) Load(b []byte) error {
 	hash := helpers.GenHash(b)
 	if hash == k.HashSum() {
-		k.logger.Info(nil, "hashsum identical. skip loading")
+		k.logger.Info(nil, "hashsum identical. skipping...")
 		return nil
 	}
 	k.rwMutex.Lock()

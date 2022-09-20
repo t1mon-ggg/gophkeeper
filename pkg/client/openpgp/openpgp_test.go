@@ -2,10 +2,14 @@ package openpgp
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"testing"
 
+	"github.com/denisbrodbeck/machineid"
 	"github.com/stretchr/testify/require"
+	"github.com/t1mon-ggg/gophkeeper/pkg/logging"
+	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
 )
 
 func generateTestKeys() {
@@ -41,6 +45,7 @@ func TestGeneratePair(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			zerolog.New().SetLevel(logging.TraceLevel)
 			os.Setenv("KEEPER_PGP_PASSPHRASE", tt.args.passphrase)
 			defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
 			p, err := New()
@@ -48,8 +53,36 @@ func TestGeneratePair(t *testing.T) {
 			err = p.GeneratePair()
 			require.NoError(t, err)
 			log.Debugf("user %s pair created and tested", nil, tt.args.name)
+			content, err := os.ReadDir("./openpgp")
+			require.NoError(t, err)
+			for _, file := range content {
+				path := fmt.Sprintf("./openpgp/%s", file.Name())
+				err := os.Remove(path)
+				require.NoError(t, err)
+				log.Debugf("%s deleted", nil, path)
+			}
+			err = os.RemoveAll("./openpgp")
+			require.NoError(t, err)
 		})
 	}
+}
+
+func TestGetPubFromRing(t *testing.T) {
+	passphrase := "test"
+	os.Setenv("KEEPER_PGP_PASSPHRASE", passphrase)
+	defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
+	p, err := New()
+	require.NoError(t, err)
+	err = p.GeneratePair()
+	require.NoError(t, err)
+	id, err := machineid.ID()
+	require.NoError(t, err)
+	f, err := os.Open(fmt.Sprintf("./openpgp/%s.pub", id))
+	require.NoError(t, err)
+	pub, err := io.ReadAll(f)
+	require.NoError(t, err)
+	got := p.GetPublicKey()
+	require.Equal(t, string(pub), got)
 	content, err := os.ReadDir("./openpgp")
 	require.NoError(t, err)
 	for _, file := range content {
@@ -60,7 +93,7 @@ func TestGeneratePair(t *testing.T) {
 	}
 	err = os.RemoveAll("./openpgp")
 	require.NoError(t, err)
-	log.Debug(nil, "./openpgp")
+
 }
 
 // func TestGenerateEncryptionAndDecryption(t *testing.T) {

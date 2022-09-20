@@ -2,3 +2,5 @@
 server.crt
 server.pem
 ssl/
+cover.out
+coverage.html

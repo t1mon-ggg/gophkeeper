@@ -30,9 +30,10 @@ var (
 )
 
 type OpenPGP struct {
+	pubkey     string
+	passphrase []byte
 	Public     *pgpcrypto.KeyRing
 	Private    *pgpcrypto.KeyRing
-	passphrase []byte
 }
 
 func New() (*OpenPGP, error) {
@@ -109,6 +110,10 @@ func New() (*OpenPGP, error) {
 		return nil, errPGP
 	}
 	return _keyring, nil
+}
+
+func (p *OpenPGP) GetPublicKey() string {
+	return p.pubkey
 }
 
 func (p *OpenPGP) AddPublicKey(armored []byte) error {
@@ -195,13 +200,13 @@ func (p *OpenPGP) GeneratePair() error {
 	}
 	keyfilename := fmt.Sprintf("./openpgp/%s.gpg", name)
 	pubfilename := fmt.Sprintf("./openpgp/%s.pub", name)
-	keyFile, err := os.OpenFile(keyfilename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	keyFile, err := os.OpenFile(keyfilename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		log.Debug(err, "openpgp private key file creation failed")
 		return errPGP
 	}
 	defer keyFile.Close()
-	pubFile, err := os.OpenFile(pubfilename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	pubFile, err := os.OpenFile(pubfilename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		log.Debug(err, "openpgp public key file creation failed")
 		return errPGP
@@ -212,6 +217,8 @@ func (p *OpenPGP) GeneratePair() error {
 		log.Debug(err, "get openpgp public key failed")
 		return errPGP
 	}
+	p.pubkey = public
+	log.Trace(nil, "Public key:\n", public)
 	fmt.Fprint(pubFile, public)
 	private, err := locked.Armor()
 	if err != nil {
@@ -219,6 +226,7 @@ func (p *OpenPGP) GeneratePair() error {
 		return errPGP
 	}
 	fmt.Fprint(keyFile, private)
+	log.Trace(nil, "Private key:\n", public)
 	err = p.AddPublicKey([]byte(public))
 	if err != nil {
 		log.Debug(err, "add public key to keyring failed")
@@ -231,6 +239,25 @@ func (p *OpenPGP) GeneratePair() error {
 	}
 	return nil
 }
+
+func (p *OpenPGP) ReloadPublicKeys(keys []string) error {
+	pub, err := pgpcrypto.NewKeyRing(nil)
+	if err != nil {
+		log.Error(err, "recreate public Keyring failed")
+		return errPGP
+	}
+	p.Public.ClearPrivateParams()
+	p.Public = pub
+	for _, armor := range keys {
+		err := p.AddPublicKey([]byte(armor))
+		if err != nil {
+			log.Error(err, "reloading public Keys failed")
+			return errPGP
+		}
+	}
+	return nil
+}
+
 func (p *OpenPGP) ReadFolder(name string) error {
 	pubfilename := fmt.Sprintf("./openpgp/%s.pub", name)
 	privfilename := fmt.Sprintf("./openpgp/%s.gpg", name)
@@ -251,6 +278,7 @@ func (p *OpenPGP) ReadFolder(name string) error {
 		log.Debug(err, "public key read failed")
 		return errPGP
 	}
+	p.pubkey = string(pubkey)
 	privkey, err := io.ReadAll(priv)
 	if err != nil {
 		log.Debug(err, "public key read failed")

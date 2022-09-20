@@ -9,18 +9,15 @@ import (
 
 	"github.com/caarlos0/env"
 	"github.com/creasty/defaults"
-	"github.com/pkg/errors"
 
+	"github.com/t1mon-ggg/gophkeeper/pkg/helpers"
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging"
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
 )
 
 var (
-	buildVersion string
-	buildDate    string
-	buildCommit  string
-	_running     *Config
-	once         sync.Once
+	_running *Config
+	once     sync.Once
 )
 
 //Config - struct for handling configuration
@@ -30,7 +27,6 @@ type Config struct {
 	Password   string         `env:"KEEPER_REMOTE_PASSWORD" json:"password,omitempty" default:"-"`
 	RemoteHTTP string         `env:"KEEPER_REMOTE_URL" json:"remote-http,omitempty" default:"-"`
 	RemoteGRPC string         `env:"KEEPER_REMOTE_GRPC" json:"remote-grpc,omitempty" default:"-"`
-	RemoteName string         `env:"KEEPER_REMOTE_NAME" json:"remote-name,omitempty" default:"-"`
 	LogLevel   uint8          `json:"LogLevel,omitempty" default:"-"`
 	Storage    string         `json:"storage" default:"secrets.db"`
 	file       string         `json:"-" default:"config.json"`
@@ -45,12 +41,8 @@ func New() *Config {
 		c.SetByFlags()
 		c.SetByFile()
 		c.SetByEnv()
-		if c.RemoteName != "" {
-			if c.RemoteHTTP == "" && c.RemoteGRPC == "" {
-				c.log().Fatal(errors.New("configuration invalid"), "remote connection value not set")
-			}
+		if c.RemoteHTTP != "" || c.RemoteGRPC != "" {
 			c.Mode = "client-server"
-			c.Storage = fmt.Sprintf("./%s.db", c.RemoteName)
 		}
 		c.log().Trace(nil, fmt.Sprintf("%+v\n", c))
 		_running = c
@@ -124,10 +116,6 @@ var (
 func (c *Config) SetByFlags() *Config {
 	flag.Parse()
 	if flag.Parsed() {
-		if isFlagPassed("version") {
-			fmt.Printf("%s\n%s\n%s", buildVersion, buildDate, buildCommit)
-			os.Exit(0)
-		}
 		if remoteHTTPFlag != nil && *remoteHTTPFlag != "" {
 			c.RemoteHTTP = *remoteHTTPFlag
 		}
@@ -147,7 +135,7 @@ func (c *Config) SetByFlags() *Config {
 			c.Storage = *storageFlag
 		}
 		if loglevelFlag != nil {
-			if isFlagPassed("loglevel") {
+			if helpers.IsFlagPassed("loglevel") {
 				switch *loglevelFlag {
 				case "trace":
 					c.LogLevel = uint8(logging.TraceLevel)
@@ -197,15 +185,4 @@ func (c *Config) Level() logging.Level {
 // isFlagPassed - checking the using of the flag
 func GetRunning() *Config {
 	return _running
-}
-
-// isFlagPassed - checking the using of the flag
-func isFlagPassed(name string) bool {
-	found := false
-	flag.Visit(func(f *flag.Flag) {
-		if f.Name == name {
-			found = true
-		}
-	})
-	return found
 }
