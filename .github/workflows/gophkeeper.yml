@@ -21,17 +21,17 @@ jobs:
           ts=$(date +"%Y/%m/%d %H:%M:%S")
           cd cmd/server
           mkdir release
-          GOOS=windows GOARCH=386 go build -ldflags -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server.exe
-          GOOS=windows GOARCH=amd64 go build -ldflags -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server64.exe
+          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server.exe
+          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server64.exe
 
-          GOOS=linux GOARCH=386 go build -ldflags -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server
-          GOOS=linux GOARCH=amd64 go build -ldflags -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server64
+          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server
+          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server64
 
-          GOOS=arm GOARCH=386 go build -ldflags -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_arm
-          GOOS=arm GOARCH=amd64 go build -ldflags -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_arm64
+          GOOS=arm GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_arm
+          GOOS=arm GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_arm64
 
-          GOOS=darwin GOARCH=386 go build -ldflags -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_darwin
-          GOOS=darwin GOARCH=amd64 go build -ldflags -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_darwin64
+          GOOS=darwin GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_darwin
+          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_darwin64
 
       # - name: Build server binary
       #   run: |
