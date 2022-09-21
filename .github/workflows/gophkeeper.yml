@@ -34,25 +34,16 @@ jobs:
     runs-on: ubuntu-latest
     container: golang:1.18
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: test
+        run: |
+          echo $(git tag)
       - name: Set environment variables
         run: |
           echo "GIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
           echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "BUILD_TIME=$(date +"%Y/%m/%d %H:%M:%S")" >> $GITHUB_ENV
-      - name: Use environment variables
-        run: |
-          echo "GIT_SHA=${GIT_SHA}"
-          echo "GIT_BRANCH=${GIT_BRANCH}"
-          echo "BUILD_TIME=${BUILD_TIME}"
-          echo "test=$(export)"
-          echo "test=$(git tag)"
       - name: Build server binary
         run: |
-          tag=$(git tag)
-          hash=$(git rev-parse --verify HEAD)
-          ts=
           cd cmd/server
           mkdir release
           GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/server.exe
