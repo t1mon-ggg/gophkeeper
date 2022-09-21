@@ -1,10 +1,12 @@
 name: build
 
 on:
-  pull_request:
+  # pull_request:
   push:
     branches:
       - dev
+    tags:
+      - 'v*.*.*'
 
 
 jobs:
@@ -41,6 +43,7 @@ jobs:
           echo "GIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
           echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "BUILD_TIME=$(date +"%Y/%m/%d %H:%M:%S")" >> $GITHUB_ENV
+          echo "${{ github.ref }}"
       - name: Build server binary
         run: |
           cd cmd/server

@@ -42,30 +42,8 @@ type OpenPGP struct {
 func New() (*OpenPGP, error) {
 	var err error
 	once.Do(func() {
-		log = zerolog.New().WithPrefix("crypto")
-		pp := new(passpharse)
-		err = env.Parse(pp)
+		p, err := emptyKeyring()
 		if err != nil {
-			log.Error(err, "read environment failed")
-		}
-		if _, ok := os.LookupEnv("KEEPER_PGP_PASSPHRASE"); pp.PP == "" && !ok {
-			p, err := helpers.ReadSecret("Enter pgp passphrase:")
-			if err != nil {
-				log.Warn(err, "read passphrase failed")
-			}
-			pp.PP = p
-		}
-		fmt.Println()
-		p := new(OpenPGP)
-		p.passphrase = []byte(pp.PP)
-		p.Private, err = pgpcrypto.NewKeyRing(nil)
-		if err != nil {
-			log.Debug(err, "empty private keyring creation failed")
-			return
-		}
-		p.Public, err = pgpcrypto.NewKeyRing(nil)
-		if err != nil {
-			log.Debug(err, "empty public keyring creation failed")
 			return
 		}
 		_keyring = p
@@ -74,7 +52,7 @@ func New() (*OpenPGP, error) {
 			log.Fatal(err, "get machineID failed")
 		}
 		if !helpers.FileExists(fmt.Sprintf("./openpgp/%s.gpg", name)) || !helpers.FileExists(fmt.Sprintf("./openpgp/%s.pub", name)) {
-			err := os.MkdirAll("./openpgp", 0755)
+			err := os.MkdirAll("./openpgp", 0777)
 			log.Warn(err, "openpgp folder creation failed")
 			err = p.GeneratePair()
 			if err != nil {
@@ -113,6 +91,36 @@ func New() (*OpenPGP, error) {
 		return nil, errPGP
 	}
 	return _keyring, nil
+}
+
+func emptyKeyring() (*OpenPGP, error) {
+	log = zerolog.New().WithPrefix("crypto")
+	pp := new(passpharse)
+	err := env.Parse(pp)
+	if err != nil {
+		log.Error(err, "read environment failed")
+		return nil, err
+	}
+	if _, ok := os.LookupEnv("KEEPER_PGP_PASSPHRASE"); pp.PP == "" && !ok {
+		p, err := helpers.ReadSecret("Enter pgp passphrase:")
+		if err != nil {
+			log.Warn(err, "read passphrase failed")
+		}
+		pp.PP = p
+	}
+	p := new(OpenPGP)
+	p.passphrase = []byte(pp.PP)
+	p.Private, err = pgpcrypto.NewKeyRing(nil)
+	if err != nil {
+		log.Debug(err, "empty private keyring creation failed")
+		return nil, err
+	}
+	p.Public, err = pgpcrypto.NewKeyRing(nil)
+	if err != nil {
+		log.Debug(err, "empty public keyring creation failed")
+		return nil, err
+	}
+	return p, nil
 }
 
 // GetPublicKey - retrun runnig public key
@@ -199,7 +207,7 @@ func (p *OpenPGP) GeneratePair() error {
 		return errPGP
 	}
 	if !helpers.FileExists("./openpgp") {
-		err := os.MkdirAll("./openpgp", 0700)
+		err := os.MkdirAll("./openpgp", 0777)
 		if err != nil {
 			log.Debug(err, "openpgp folder creation failed")
 			return errPGP
@@ -207,13 +215,13 @@ func (p *OpenPGP) GeneratePair() error {
 	}
 	keyfilename := fmt.Sprintf("./openpgp/%s.gpg", name)
 	pubfilename := fmt.Sprintf("./openpgp/%s.pub", name)
-	keyFile, err := os.OpenFile(keyfilename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	keyFile, err := os.OpenFile(keyfilename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
 	if err != nil {
 		log.Debug(err, "openpgp private key file creation failed")
 		return errPGP
 	}
 	defer keyFile.Close()
-	pubFile, err := os.OpenFile(pubfilename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	pubFile, err := os.OpenFile(pubfilename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
 	if err != nil {
 		log.Debug(err, "openpgp public key file creation failed")
 		return errPGP

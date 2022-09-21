@@ -66,6 +66,7 @@ func New() *Server {
 func (s *Server) chanCleaner() {
 	mux := websockets.GetMutex()
 	chs := websockets.GetMsgChan().Cleanup()
+	ticker := time.NewTicker(10 * time.Second)
 	s.log.Trace(nil, "channel cleaner started")
 	for {
 		select {
@@ -73,8 +74,7 @@ func (s *Server) chanCleaner() {
 			s.log.Trace(nil, "channel cleaner stopped")
 			s.wg.Done()
 			return
-		default:
-			time.Sleep(10 * time.Second)
+		case <-ticker.C:
 			s.log.Trace(nil, "try to make cleanup")
 			for _, vv := range chs {
 				s.log.Trace(nil, "cleanup for ", vv.Vault)

@@ -55,19 +55,16 @@ func TestConfig_SetByEnv(t *testing.T) {
 			Username:   "username",
 			Password:   "password",
 			RemoteHTTP: "https://localhost.ltd:8443",
-			RemoteGRPC: "localhost.ltd:3200",
 		},
 	}
 	os.Setenv("KEEPER_PGP_PASSPHRASE", "passphrase")
 	os.Setenv("KEEPER_REMOTE_USERNAME", "username")
 	os.Setenv("KEEPER_REMOTE_PASSWORD", "password")
 	os.Setenv("KEEPER_REMOTE_URL", "https://localhost.ltd:8443")
-	os.Setenv("KEEPER_REMOTE_GRPC", "localhost.ltd:3200")
 	defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
 	defer os.Unsetenv("KEEPER_REMOTE_USERNAME")
 	defer os.Unsetenv("KEEPER_REMOTE_PASSWORD")
 	defer os.Unsetenv("KEEPER_REMOTE_URL")
-	defer os.Unsetenv("KEEPER_REMOTE_GRPC")
 	t.Run(test.name, func(t *testing.T) {
 		c := Config{}
 		c.SetDefaults()
@@ -75,7 +72,6 @@ func TestConfig_SetByEnv(t *testing.T) {
 		require.Equal(t, test.want.Username, c.Username)
 		require.Equal(t, test.want.Password, c.Password)
 		require.Equal(t, test.want.RemoteHTTP, c.RemoteHTTP)
-		require.Equal(t, test.want.RemoteGRPC, c.RemoteGRPC)
 	})
 }
 
@@ -88,111 +84,110 @@ func TestConfig_SetByFlags(t *testing.T) {
 	}{
 		{
 			name: "set up flags with warn log level",
-			args: []string{"-remote-http", "https://localhost.ltd:8443", "-remote-grpc", "localhost.ltd:3200", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "warn"},
+			args: []string{"-remote-http", "https://localhost.ltd:8443", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "warn"},
 			want: Config{
 				Mode:       "client-server",
 				Username:   "username",
 				Password:   "password",
 				RemoteHTTP: "https://localhost.ltd:8443",
-				RemoteGRPC: "localhost.ltd:3200",
-				LogLevel:   uint8(logging.WarnLevel),
-				Storage:    "secrets.db",
-				file:       "remove_me.json",
+
+				LogLevel: uint8(logging.WarnLevel),
+				Storage:  "secrets.db",
+				file:     "remove_me.json",
 			},
 		},
 		{
 			name: "set up flags with fatal log level",
-			args: []string{"-remote-http", "https://localhost.ltd:8443", "-remote-grpc", "localhost.ltd:3200", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "fatal"},
+			args: []string{"-remote-http", "https://localhost.ltd:8443", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "fatal"},
 			want: Config{
 				Mode:       "client-server",
 				Username:   "username",
 				Password:   "password",
 				RemoteHTTP: "https://localhost.ltd:8443",
-				RemoteGRPC: "localhost.ltd:3200",
-				LogLevel:   uint8(logging.FatalLevel),
-				Storage:    "secrets.db",
-				file:       "remove_me.json",
+
+				LogLevel: uint8(logging.FatalLevel),
+				Storage:  "secrets.db",
+				file:     "remove_me.json",
 			},
 		},
 		{
 			name: "set up flags with panic log level",
-			args: []string{"-remote-http", "https://localhost.ltd:8443", "-remote-grpc", "localhost.ltd:3200", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "panic"},
+			args: []string{"-remote-http", "https://localhost.ltd:8443", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "panic"},
 			want: Config{
 				Mode:       "client-server",
 				Username:   "username",
 				Password:   "password",
 				RemoteHTTP: "https://localhost.ltd:8443",
-				RemoteGRPC: "localhost.ltd:3200",
-				LogLevel:   uint8(logging.PanicLevel),
-				Storage:    "secrets.db",
-				file:       "remove_me.json",
+
+				LogLevel: uint8(logging.PanicLevel),
+				Storage:  "secrets.db",
+				file:     "remove_me.json",
 			},
 		},
 		{
 			name: "set up flags with debug log level",
-			args: []string{"-remote-http", "https://localhost.ltd:8443", "-remote-grpc", "localhost.ltd:3200", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "debug"},
+			args: []string{"-remote-http", "https://localhost.ltd:8443", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "debug"},
 			want: Config{
 				Mode:       "client-server",
 				Username:   "username",
 				Password:   "password",
 				RemoteHTTP: "https://localhost.ltd:8443",
-				RemoteGRPC: "localhost.ltd:3200",
-				LogLevel:   uint8(logging.DebugLevel),
-				Storage:    "secrets.db",
-				file:       "remove_me.json",
+
+				LogLevel: uint8(logging.DebugLevel),
+				Storage:  "secrets.db",
+				file:     "remove_me.json",
 			},
 		},
 		{
 			name: "set up flags with info log level",
-			args: []string{"-remote-http", "https://localhost.ltd:8443", "-remote-grpc", "localhost.ltd:3200", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "info"},
+			args: []string{"-remote-http", "https://localhost.ltd:8443", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "info"},
 			want: Config{
 				Mode:       "client-server",
 				Username:   "username",
 				Password:   "password",
 				RemoteHTTP: "https://localhost.ltd:8443",
-				RemoteGRPC: "localhost.ltd:3200",
-				LogLevel:   uint8(logging.InfoLevel),
-				Storage:    "secrets.db",
-				file:       "remove_me.json",
+
+				LogLevel: uint8(logging.InfoLevel),
+				Storage:  "secrets.db",
+				file:     "remove_me.json",
 			},
 		},
 		{
 			name: "set up flags with error log level",
-			args: []string{"-remote-http", "https://localhost.ltd:8443", "-remote-grpc", "localhost.ltd:3200", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "error"},
+			args: []string{"-remote-http", "https://localhost.ltd:8443", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "error"},
 			want: Config{
 				Mode:       "client-server",
 				Username:   "username",
 				Password:   "password",
 				RemoteHTTP: "https://localhost.ltd:8443",
-				RemoteGRPC: "localhost.ltd:3200",
-				LogLevel:   uint8(logging.ErrorLevel),
-				Storage:    "secrets.db",
-				file:       "remove_me.json",
+
+				LogLevel: uint8(logging.ErrorLevel),
+				Storage:  "secrets.db",
+				file:     "remove_me.json",
 			},
 		},
 		{
 			name: "set up flags with trace log level",
-			args: []string{"-remote-http", "https://localhost.ltd:8443", "-remote-grpc", "localhost.ltd:3200", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "trace"},
+			args: []string{"-remote-http", "https://localhost.ltd:8443", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "trace"},
 			want: Config{
 				Mode:       "client-server",
 				Username:   "username",
 				Password:   "password",
 				RemoteHTTP: "https://localhost.ltd:8443",
-				RemoteGRPC: "localhost.ltd:3200",
-				LogLevel:   uint8(logging.TraceLevel),
-				Storage:    "secrets.db",
-				file:       "remove_me.json",
+
+				LogLevel: uint8(logging.TraceLevel),
+				Storage:  "secrets.db",
+				file:     "remove_me.json",
 			},
 		},
 		{
 			name: "set up flags with wrong log level",
-			args: []string{"-remote-http", "https://localhost.ltd:8443", "-remote-grpc", "localhost.ltd:3200", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "bla"},
+			args: []string{"-remote-http", "https://localhost.ltd:8443", "-config", "remove_me.json", "-storage", "secrets.db", "-username", "username", "-password", "password", "-loglevel", "bla"},
 			want: Config{
 				Mode:       "client-server",
 				Username:   "username",
 				Password:   "password",
 				RemoteHTTP: "https://localhost.ltd:8443",
-				RemoteGRPC: "localhost.ltd:3200",
 				LogLevel:   uint8(logging.InfoLevel),
 				Storage:    "secrets.db",
 				file:       "remove_me.json",
@@ -228,9 +223,9 @@ func TestConfig_SetByFile(t *testing.T) {
 				Username:   "username",
 				Password:   "password",
 				RemoteHTTP: "https://localhost.ltd:8443",
-				RemoteGRPC: "localhost.ltd:3200",
-				LogLevel:   4,
-				file:       "remove_me.json",
+
+				LogLevel: 4,
+				file:     "remove_me.json",
 			},
 		},
 		{
@@ -239,9 +234,9 @@ func TestConfig_SetByFile(t *testing.T) {
 				Username:   "username",
 				Password:   "password",
 				RemoteHTTP: "https://localhost.ltd:8443",
-				RemoteGRPC: "localhost.ltd:3200",
-				LogLevel:   4,
-				file:       "not_create_me.json",
+
+				LogLevel: 4,
+				file:     "not_create_me.json",
 			},
 		},
 	}

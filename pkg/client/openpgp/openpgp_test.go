@@ -12,11 +12,76 @@ import (
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
 )
 
-func generateTestKeys() {
+const (
+	pubKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GopenPGP 2.4.10
+Comment: https://gopenpgp.org
 
+xjMEYyhjxhYJKwYBBAHaRw8BAQdABBGMYkg//P2HBC0JCUbjqhJy7I6X9RFm4XVd
+dKDNqAzNMWFjNWM2YjEwZDgyYjRkYmVhZGQ1OTdiZWYwMTA1OTcxIDx0ZXN0QGVt
+YWlsLmNvbT7CjAQTFggAPgUCYyhjxgmQjNtOjc05I/QWIQT+HnsCjM5BpqRmWPmM
+206NzTkj9AIbAwIeAQIZAQMLCQcCFQgDFgACAiIBAABvtgEAk/WEMtwHzJhobY1J
+zI8BlwEWcGimU4tTZlRHny1qaEoBAKU7nA+fK6ZBscwqkUGT5OBHGAnVatOF3ioT
+CFU6cSANzjgEYyhjxhIKKwYBBAGXVQEFAQEHQFD9Bv7VAt2IOfO2DTRZDO5lZPad
+XBUdBd/6FXk0F1dUAwEKCcJ4BBgWCAAqBQJjKGPGCZCM206NzTkj9BYhBP4eewKM
+zkGmpGZY+YzbTo3NOSP0AhsMAADziAD/eKxXpURDFFGW2nH386BR0fz7Y3shDZmA
+CoxeB8h3ohgA/RtSpyonZVmeAhLWmJT2zKlgYERG8g11iYjeo48itewK
+=IyYM
+-----END PGP PUBLIC KEY BLOCK-----`
+
+	privkey = `-----BEGIN PGP PRIVATE KEY BLOCK-----
+Version: GopenPGP 2.4.10
+Comment: https://gopenpgp.org
+
+xYYEYyro8BYJKwYBBAHaRw8BAQdAvpsXVpSKOlQPdw/oVZGvJrF7zisGZhJGb8jC
+Ctlqji/+CQMIm+HROP8dhSlgaCPqmvWK3o1zFidzgCLW7jz4G3Fjmv2yQbyO6AC7
+Ak3eW320T3VLYN7YDqJRJbRLCJCgzt1ff9jCjr4g8QyUT6wVcctkfc0xYWM1YzZi
+MTBkODJiNGRiZWFkZDU5N2JlZjAxMDU5NzEgPHVzZXJAZW1haWwuY29tPsKMBBMW
+CAA+BQJjKujwCZDgMsZsFNDkFBYhBBG1gnZ8+VJvsceu4uAyxmwU0OQUAhsDAh4B
+AhkBAwsJBwIVCAMWAAICIgEAAEROAQDlWO7DgMODhcxzu2c/WYFfhr8qQ34ZTSa7
+ZTO09EOMfQEAyGpfmBpMdkWfllTjr/KPoJw4lNQ63+Kb5VMB0pz9KwPHiwRjKujw
+EgorBgEEAZdVAQUBAQdACBIDWwnJ7ZmFGd1G/uQ7ThKtXwOdG32qyIIQP8y3y0YD
+AQoJ/gkDCCuHI1pwIahgYGLGD/nkrPxi7oIE9lZziu0w1d2q2vNK1a0FZ/px3Ixo
+iysRKFMP3DoQGTyY8TXnfkXeejgmVMdqc3IjhwKxRtzex0dcAZfCeAQYFggAKgUC
+Yyro8AmQ4DLGbBTQ5BQWIQQRtYJ2fPlSb7HHruLgMsZsFNDkFAIbDAAA8ekA/iRC
+hPs8Mb5lncbgC9b3brnX2ZTBjXiLpBWVyCCf5EfSAP0Skg4EjvLRIxnwJ5YNLvus
+wlLvJXQkM2ZQXKOUQYWBAw==
+=V+1n
+-----END PGP PRIVATE KEY BLOCK-----`
+
+	encrypted = `-----BEGIN PGP MESSAGE-----
+Version: GopenPGP 2.4.10
+Comment: https://gopenpgp.org
+
+wV4DElBhMCk5W8ASAQdA8zrgeJLiw5ebj2cFhedRwX+NQDe7mTPbkaqETU7SkHww
+8T4Wv9pUvX02mStPGSU14lCvHKp1mQJl6QVYDyCCjMEwew1CBJ0RG5nvuJH0dHd6
+0sCAAfqrxO4fjDM0jL4MFp5awG9L2B2WPm+qv1wbQBOncje0ws/Yxssnl+3sViy0
+4JlOoB9gmWQKee4ICdxcdgm+2jxwcgM1h/bSLOCUMsTEWjS1qGgSYDCJvm2AYy0u
+pK0ek6GZ7SEffLXPplhxjQ3SnLd79TJbRnAruTI3GNRtPnNJTzUGmR+jVTZXucF3
+LcobhdAHTyGvsmptNzv8Cuw6dBkvPE1mag2Po/Ib5yV+pcsnsXLEyLUn/nbCu25A
+9KR/9g1UfMCH49784tgjMGK8I6M6CRE7usi9+OKt7qXeFJk7sjYDXITP9TAagSWj
+AEyVpCTUKzFmPFnEgp9NIzON06oBxbxsBrSsVOe0y5fE5XIEK4ITKNxWNJXRbcwY
+/VbGO/YyM+kDMGVtBlUvr39NRrCnmaBLLvqA2cpTA5dysKg=
+=oaoI
+-----END PGP MESSAGE-----
+`
+)
+
+func clean(t *testing.T) {
+	content, err := os.ReadDir("./openpgp")
+	require.NoError(t, err)
+	for _, file := range content {
+		path := fmt.Sprintf("./openpgp/%s", file.Name())
+		err := os.Remove(path)
+		require.NoError(t, err)
+		log.Debugf("%s deleted", nil, path)
+	}
+	err = os.RemoveAll("./openpgp")
+	require.NoError(t, err)
 }
 
 func TestGeneratePair(t *testing.T) {
+	defer clean(t)
 	type args struct {
 		name       string
 		email      string
@@ -31,15 +96,7 @@ func TestGeneratePair(t *testing.T) {
 			args: args{
 				name:       "tester",
 				email:      "tester@test.com",
-				passphrase: "test-password",
-			},
-		},
-		{
-			name: "genereate openpgp pair with blank passphrase",
-			args: args{
-				name:       "tester2",
-				email:      "tester2@test.com",
-				passphrase: "",
+				passphrase: "test",
 			},
 		},
 	}
@@ -53,23 +110,13 @@ func TestGeneratePair(t *testing.T) {
 			err = p.GeneratePair()
 			require.NoError(t, err)
 			log.Debugf("user %s pair created and tested", nil, tt.args.name)
-			content, err := os.ReadDir("./openpgp")
-			require.NoError(t, err)
-			for _, file := range content {
-				path := fmt.Sprintf("./openpgp/%s", file.Name())
-				err := os.Remove(path)
-				require.NoError(t, err)
-				log.Debugf("%s deleted", nil, path)
-			}
-			err = os.RemoveAll("./openpgp")
-			require.NoError(t, err)
 		})
 	}
 }
 
 func TestGetPubFromRing(t *testing.T) {
-	passphrase := "test"
-	os.Setenv("KEEPER_PGP_PASSPHRASE", passphrase)
+	defer clean(t)
+	os.Setenv("KEEPER_PGP_PASSPHRASE", "test")
 	defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
 	p, err := New()
 	require.NoError(t, err)
@@ -83,100 +130,103 @@ func TestGetPubFromRing(t *testing.T) {
 	require.NoError(t, err)
 	got := p.GetPublicKey()
 	require.Equal(t, string(pub), got)
-	content, err := os.ReadDir("./openpgp")
+
+}
+
+func TestGenerateEncryptionAndDecryption(t *testing.T) {
+	defer clean(t)
+	os.Setenv("KEEPER_PGP_PASSPHRASE", "test")
+	defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
+	p, err := New()
 	require.NoError(t, err)
-	for _, file := range content {
-		path := fmt.Sprintf("./openpgp/%s", file.Name())
-		err := os.Remove(path)
-		require.NoError(t, err)
-		log.Debugf("%s deleted", nil, path)
-	}
-	err = os.RemoveAll("./openpgp")
+	err = p.GeneratePair()
+	require.NoError(t, err)
+	testdata := []byte("very secret")
+	encrypted, err := p.EncryptWithKeys(testdata)
+	require.NoError(t, err)
+	decrypted, err := p.DecryptWithKey(encrypted)
+	require.NoError(t, err)
+	require.Equal(t, testdata, decrypted)
+}
+
+func TestReloadPublicKeys(t *testing.T) {
+	defer clean(t)
+	os.Setenv("KEEPER_PGP_PASSPHRASE", "test")
+	defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
+	p, err := New()
+	require.NoError(t, err)
+	err = p.GeneratePair()
+	require.NoError(t, err)
+	pp := []string{pubKey}
+	err = p.ReloadPublicKeys(pp)
 	require.NoError(t, err)
 
 }
 
-// func TestGenerateEncryptionAndDecryption(t *testing.T) {
-// 	log := zerolog.New().WithPrefix("openpgp-test")
-// 	type users struct {
-// 		passphrase string
-// 	}
-// 	usrs := []users{
-// 		{
-// 			passphrase: "first_passphrase",
-// 		},
-// 	}
-// 	name, err := machineid.ID()
-// 	require.NoError(t, err)
-// 	msg := []byte("this is very confidential information")
-// 	for _, user := range usrs {
-// 		os.Setenv("KEEPER_PGP_PASSPHRASE", user.passphrase)
-// 		defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
-// 		p, err := New()
-// 		require.NoError(t, err)
-// 		err = p.GeneratePair()
-// 		require.NoError(t, err)
-// 		log.Debugf("user %s pair created", nil, name)
-// 	}
-// 	for _, user := range usrs {
-// 		os.Setenv("KEEPER_PGP_PASSPHRASE", user.passphrase)
-// 		defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
-// 		p, err := New()
-// 		require.NoError(t, err)
-// 		privPath := fmt.Sprintf("./openpgp/%s.gpg", name)
-// 		priv, err := os.ReadFile(privPath)
-// 		require.NoError(t, err)
-// 		p.AddPrivateKey(priv)
-// 		for _, u := range usrs {
-// 			pubPath := fmt.Sprintf("./openpgp/%s.gpg.pub", name)
-// 			pub, err := os.ReadFile(pubPath)
-// 			require.NoError(t, err)
-// 			p.AddPublicKey(pub)
-// 		}
-// 		testname := fmt.Sprintf("test encryption with %s", name)
-// 		t.Run(testname, func(t *testing.T) {
-// 			encrypted, err := p.EncryptWithKeys(msg)
-// 			require.NoError(t, err)
-// 			log.Debugf("Encrypted message: \n%s", nil, string(encrypted))
-// 			for _, uu := range usrs {
-// 				os.Setenv("KEEPER_PGP_PASSPHRASE", uu.passphrase)
-// 				defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
-// 				pp, err := New()
-// 				require.NoError(t, err)
-// 				privPath := fmt.Sprintf("./openpgp/%s.gpg", name)
-// 				priv, err := os.ReadFile(privPath)
-// 				require.NoError(t, err)
-// 				pp.AddPrivateKey(priv)
-// 				for _, uuu := range usrs {
-// 					pubPath := fmt.Sprintf("./openpgp/%s.gpg.pub", name)
-// 					pub, err := os.ReadFile(pubPath)
-// 					require.NoError(t, err)
-// 					pp.AddPublicKey(pub)
-// 				}
-// 				subtestname := fmt.Sprintf("test decryption with %s", name)
-// 				t.Run(subtestname, func(t *testing.T) {
-// 					require.NoError(t, err)
-// 					got, err := pp.DecryptWithKey(encrypted)
-// 					require.NoError(t, err)
-// 					require.Equal(t, msg, got)
-// 					log.Debug(nil, string(got))
-// 				})
-// 			}
+func TestAddPrivateKey(t *testing.T) {
+	defer clean(t)
+	os.Setenv("KEEPER_PGP_PASSPHRASE", "test")
+	defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
+	p, err := New()
+	require.NoError(t, err)
+	err = p.GeneratePair()
+	require.NoError(t, err)
+	err = p.AddPrivateKey([]byte(privkey))
+	require.NoError(t, err)
 
-// 		})
-// 	}
-// 	content, err := os.ReadDir("./openpgp")
-// 	require.NoError(t, err)
-// 	for _, file := range content {
-// 		path := fmt.Sprintf("./openpgp/%s", file.Name())
-// 		err := os.Remove(path)
-// 		require.NoError(t, err)
-// 		log.Debugf("%s deleted", nil, path)
-// 	}
-// 	err = os.RemoveAll("./openpgp")
-// 	require.NoError(t, err)
-// 	log.Debug(nil, "./openpgp")
-// }
+}
+
+func TestReadFolder(t *testing.T) {
+	defer clean(t)
+	os.Setenv("KEEPER_PGP_PASSPHRASE", "test")
+	defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
+	p, err := New()
+	require.NoError(t, err)
+	err = p.GeneratePair()
+	require.NoError(t, err)
+	err = p.ReadFolder("ac5c6b10d82b4dbeadd597bef0105971")
+	require.NoError(t, err)
+
+}
+
+func TestEncryptEmpty(t *testing.T) {
+	defer clean(t)
+	os.Setenv("KEEPER_PGP_PASSPHRASE", "test")
+	defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
+	p, err := New()
+	require.NoError(t, err)
+	err = p.GeneratePair()
+	require.NoError(t, err)
+	_, err = p.EncryptWithKeys([]byte{})
+	require.Error(t, err)
+
+}
+
+func TestDecryptEmpty(t *testing.T) {
+	defer clean(t)
+	os.Setenv("KEEPER_PGP_PASSPHRASE", "test")
+	defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
+	p, err := New()
+	require.NoError(t, err)
+	err = p.GeneratePair()
+	require.NoError(t, err)
+	_, err = p.DecryptWithKey([]byte{})
+	require.Error(t, err)
+
+}
+
+func TestAddPublic(t *testing.T) {
+	defer clean(t)
+	os.Setenv("KEEPER_PGP_PASSPHRASE", "test")
+	defer os.Unsetenv("KEEPER_PGP_PASSPHRASE")
+	p, err := New()
+	require.NoError(t, err)
+	err = p.GeneratePair()
+	require.NoError(t, err)
+	err = p.AddPublicKey([]byte(pubKey))
+	require.NoError(t, err)
+
+}
 
 // func TestStream(t *testing.T) {
 // 	p, err := New("passphrase")
@@ -203,3 +253,46 @@ func TestGetPubFromRing(t *testing.T) {
 // 	})
 
 // }
+
+func TestG(t *testing.T) {
+	defer clean(t)
+	p, err := emptyKeyring()
+	require.NoError(t, err)
+	require.NotNil(t, p)
+	p.passphrase = []byte("test")
+	err = p.ReadFolder("ttt")
+	require.Error(t, err)
+	err = p.AddPrivateKey([]byte(privkey))
+	require.NoError(t, err)
+	err = p.AddPublicKey([]byte(pubKey))
+	require.NoError(t, err)
+
+	err = p.AddPrivateKey([]byte{})
+	require.Error(t, err)
+	err = p.AddPublicKey([]byte{})
+	require.Error(t, err)
+
+	err = p.ReloadPublicKeys([]string{"test"})
+	require.Error(t, err)
+
+	_, err = p.DecryptWithKey([]byte("data"))
+	require.Error(t, err)
+
+	_, err = p.DecryptWithKey([]byte(encrypted))
+	require.Error(t, err)
+	err = os.MkdirAll("./openpgp", 0777)
+	require.NoError(t, err)
+	f, err := os.OpenFile("./openpgp/test.gpg", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
+	require.NoError(t, err)
+	_, err = fmt.Fprint(f, "test")
+	require.NoError(t, err)
+	err = f.Close()
+	require.NoError(t, err)
+
+	err = p.ReadFolder("test")
+	require.Error(t, err)
+
+	p.passphrase = []byte("123")
+	err = p.AddPrivateKey([]byte(privkey))
+	require.Error(t, err)
+}
