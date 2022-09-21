@@ -71,7 +71,7 @@ const (
 	pullVersions  = `SELECT time, checksum FROM public.keeper WHERE username=$1`
 	listPGP       = `SELECT time, publickey, confirmed FROM public.openpgp WHERE revoked=false AND username=$1;`
 	addPGP        = `INSERT INTO public.openpgp (username, publickey, time, confirmed) VALUES ( $1, $2, $3, $4 );`
-	revokePGP     = `UPDATE public.openpgp	SET revoked=true WHERE publickey=$1;`
+	revokePGP     = `UPDATE public.openpgp	SET revoked=true WHERE publickey=$1 AND username=$2;`
 	confirmPGP    = `UPDATE public.openpgp	SET confirmed=true WHERE username=$1 AND publickey=$2;`
 )
 
@@ -89,14 +89,15 @@ func New() (Storage, error) {
 	var err error
 	s := new(psqlStorage)
 	once.Do(func() {
+		var db *pgxpool.Pool
 		s.logger = zerolog.New().WithPrefix("storage")
 		s.log().Debug(nil, "Connecting to Postgres database")
-		db, err := pgxpool.Connect(context.Background(), config.New().DSN)
+		db, err = pgxpool.Connect(context.Background(), config.New().DSN)
 		if err != nil {
 			s.log().Error(err, "error in database connection")
 			return
 		}
-		s.log().Info(nil, "Database storage connected")
+		s.log().Trace(nil, "Database storage connected")
 		s.db = db
 		err = s.create()
 		if err != nil {
@@ -110,7 +111,7 @@ func New() (Storage, error) {
 	return _storage, nil
 }
 
-func (s *psqlStorage) SignUp(username, password string, ip *net.IP) error {
+func (s *psqlStorage) SignUp(username, password string, ip net.IP) error {
 	now := time.Now()
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
@@ -128,7 +129,7 @@ func (s *psqlStorage) SignUp(username, password string, ip *net.IP) error {
 	return nil
 }
 
-func (s *psqlStorage) SignIn(user models.User, ip *net.IP) error {
+func (s *psqlStorage) SignIn(user models.User, ip net.IP) error {
 	now := time.Now()
 	usr := new(string)
 	pwd := new(string)
@@ -145,12 +146,12 @@ func (s *psqlStorage) SignIn(user models.User, ip *net.IP) error {
 	}
 	hashed, err := hex.DecodeString(*pwd)
 	if err != nil {
-		s.log().Tracef("hex decode password hash completed with error %v", err)
+		s.log().Trace(err, "hex decode password hash completed with error")
 		return errors.New("no such user or password")
 	}
 	err = bcrypt.CompareHashAndPassword(hashed, []byte(user.Password))
 	if err != nil {
-		s.log().Tracef("error in password verification [%v]", err)
+		s.log().Trace(err, "error in password verification")
 		s.log().Debugf("wrong creditentials provided [user \"%s\" with password \"%s\"]", nil, ansi.Color(user.Username, "red+b"), ansi.Color(user.Password, "red+b"))
 		return errors.New("no such user or password")
 	}
@@ -158,7 +159,7 @@ func (s *psqlStorage) SignIn(user models.User, ip *net.IP) error {
 	return nil
 }
 
-func (s *psqlStorage) DeleteUser(username string, ip *net.IP) error {
+func (s *psqlStorage) DeleteUser(username string, ip net.IP) error {
 	now := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -176,7 +177,7 @@ func (s *psqlStorage) DeleteUser(username string, ip *net.IP) error {
 	return nil
 }
 
-func (s *psqlStorage) Push(username, checksum string, data string, ip *net.IP) error {
+func (s *psqlStorage) Push(username, checksum string, data string, ip net.IP) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	now := time.Now()
@@ -190,14 +191,14 @@ func (s *psqlStorage) Push(username, checksum string, data string, ip *net.IP) e
 	return nil
 }
 
-func (s *psqlStorage) Pull(username, checksum string, ip *net.IP) ([]byte, error) {
+func (s *psqlStorage) Pull(username, checksum string, ip net.IP) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	now := time.Now()
 	rows, err := s.db.Query(ctx, pullData, username, checksum)
 	if err != nil {
 		s.log().Error(err, "get secret failed")
-		return []byte{}, err
+		return nil, err
 	}
 	var latest []byte
 	var timestamp time.Time
@@ -207,6 +208,7 @@ func (s *psqlStorage) Pull(username, checksum string, ip *net.IP) ([]byte, error
 		err := rows.Scan(&content, &ts)
 		if err != nil {
 			s.log().Error(err, "row scan failed")
+			return nil, err
 		}
 		if ts.After(timestamp) {
 			s.log().Tracef("latest timestamp %s with hash %s", nil, ts.Format(time.RFC822), checksum)
@@ -214,12 +216,16 @@ func (s *psqlStorage) Pull(username, checksum string, ip *net.IP) ([]byte, error
 			latest = []byte(content)
 		}
 	}
+	if len(latest) == 0 {
+		s.log().Error(nil, "no content found")
+		return nil, errors.New("no content")
+	}
 	s.log().Trace(nil, "result ", string(latest))
 	s.SaveLog(username, "pull", checksum, ip, now)
 	return latest, nil
 }
 
-func (s *psqlStorage) Versions(username string, ip *net.IP) ([]models.Version, error) {
+func (s *psqlStorage) Versions(username string, ip net.IP) ([]models.Version, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	now := time.Now()
@@ -245,11 +251,15 @@ func (s *psqlStorage) Versions(username string, ip *net.IP) ([]models.Version, e
 		s.log().Tracef("%+v", nil, v)
 		versions = append(versions, v)
 	}
+	if len(versions) == 0 {
+		s.log().Error(nil, "no content found")
+		return nil, errors.New("no content")
+	}
 	s.SaveLog(username, "get versions", "", ip, now)
 	return helpers.OnlyOne(versions), nil
 }
 
-func (s *psqlStorage) SaveLog(username, action, checksum string, ip *net.IP, date time.Time) error {
+func (s *psqlStorage) SaveLog(username, action, checksum string, ip net.IP, date time.Time) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	now := time.Now()
@@ -261,7 +271,7 @@ func (s *psqlStorage) SaveLog(username, action, checksum string, ip *net.IP, dat
 	return nil
 }
 
-func (s *psqlStorage) GetLog(username string, ip *net.IP) ([]models.Action, error) {
+func (s *psqlStorage) GetLog(username string, ip net.IP) ([]models.Action, error) {
 	now := time.Now()
 	actions := []models.Action{}
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
@@ -283,7 +293,7 @@ func (s *psqlStorage) GetLog(username string, ip *net.IP) ([]models.Action, erro
 			return nil, err
 		}
 		addr := net.ParseIP(ip)
-		act := models.Action{Action: action, Checksum: checksum, IP: &addr, Date: date}
+		act := models.Action{Action: action, Checksum: checksum, IP: addr, Date: date}
 		s.log().Tracef("%+v", nil, act)
 		actions = append(actions, act)
 	}
@@ -291,7 +301,7 @@ func (s *psqlStorage) GetLog(username string, ip *net.IP) ([]models.Action, erro
 	return actions, nil
 }
 
-func (s *psqlStorage) ListPGP(username string, ip *net.IP) ([]models.PGP, error) {
+func (s *psqlStorage) ListPGP(username string, ip net.IP) ([]models.PGP, error) {
 	now := time.Now()
 	keys := []models.PGP{}
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
@@ -317,11 +327,16 @@ func (s *psqlStorage) ListPGP(username string, ip *net.IP) ([]models.PGP, error)
 		s.log().Tracef("%+v", nil, key)
 		keys = append(keys, key)
 	}
+	if len(keys) == 0 {
+		s.log().Error(nil, "vault keys not found")
+		return nil, errors.New("no content")
+	}
+	s.log().Trace(nil, "found ", keys)
 	s.SaveLog(username, "list pgp", "", ip, now)
 	return keys, nil
 }
 
-func (s *psqlStorage) AddPGP(username, publickey string, confirm bool, ip *net.IP) error {
+func (s *psqlStorage) AddPGP(username, publickey string, confirm bool, ip net.IP) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	now := time.Now()
@@ -335,37 +350,46 @@ func (s *psqlStorage) AddPGP(username, publickey string, confirm bool, ip *net.I
 	return nil
 }
 
-func (s *psqlStorage) RevokePGP(username, publickey string, ip *net.IP) error {
+func (s *psqlStorage) RevokePGP(username, publickey string, ip net.IP) error {
 	now := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_, err := s.db.Exec(ctx, revokePGP, publickey)
+	tag, err := s.db.Exec(ctx, revokePGP, publickey, username)
 	if err != nil {
 		s.log().Debug(err, "revoke failed")
 		return errors.New("revoke failed")
 	}
-
+	s.log().Tracef("Affected rows are: %d", nil, tag.RowsAffected())
+	if tag.RowsAffected() == 0 {
+		s.log().Error(nil, "combination of vault and piublic key not found")
+		return errors.New("no such vault or public key")
+	}
 	s.SaveLog(username, "revoke pgp public key", "", ip, now)
 	return nil
 }
 
-func (s *psqlStorage) ConfirmPGP(username, publickey string, ip *net.IP) error {
+func (s *psqlStorage) ConfirmPGP(username, publickey string, ip net.IP) error {
 	now := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_, err := s.db.Exec(ctx, confirmPGP, username, publickey)
+	tag, err := s.db.Exec(ctx, confirmPGP, username, publickey)
 	if err != nil {
 		s.log().Debug(err, "confirm failed")
 		return errors.New("confirm failed")
 	}
-
+	s.log().Tracef("Affected rows are: %d", nil, tag.RowsAffected())
+	if tag.RowsAffected() == 0 {
+		s.log().Error(nil, "combination of vault and piublic key not found")
+		return errors.New("no such vault or public key")
+	}
 	s.SaveLog(username, "confirm pgp public key", "", ip, now)
 	return nil
 }
 
-func (s *psqlStorage) Close() {
+func (s *psqlStorage) Close() error {
 	s.db.Close()
-	s.log().Info(nil, "database connection closed")
+	s.log().Trace(nil, "database connection closed")
+	return nil
 }
 
 func (s *psqlStorage) Ping() error {

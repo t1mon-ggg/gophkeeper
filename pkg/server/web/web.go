@@ -196,7 +196,7 @@ func (s *Server) registration(c echo.Context) error {
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
 	s.log.Debugf("recieved registration request for user %v", nil, ansi.Color(u.Username, "green+b"))
-	err := s.db.SignUp(u.Username, u.Password, &addr)
+	err := s.db.SignUp(u.Username, u.Password, addr)
 	if err != nil {
 		s.log.Warnf("registration failed with error", err, "")
 		return errRegFail
@@ -207,7 +207,7 @@ func (s *Server) registration(c echo.Context) error {
 		return errIntSrvErr
 	}
 	s.log.Trace(nil, "auth token generated")
-	err = s.db.AddPGP(u.Username, u.PublicKey, true, &addr)
+	err = s.db.AddPGP(u.Username, u.PublicKey, true, addr)
 	if err != nil {
 		s.log.Error(err, "public key saving error")
 		return errIntSrvErr
@@ -230,7 +230,7 @@ func (s *Server) signin(c echo.Context) error {
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
 	s.log.Debugf("recieved login request for user %v", nil, ansi.Color(user.Username, "green+b"))
-	err := s.db.SignIn(*user, &addr)
+	err := s.db.SignIn(*user, addr)
 	if err != nil {
 		s.log.Warn(err)
 		return errUnAuth
@@ -240,7 +240,7 @@ func (s *Server) signin(c echo.Context) error {
 		s.log.Error(err, "authorization token creation error")
 		return errIntSrvErr
 	}
-	keys, err := s.db.ListPGP(user.Username, &addr)
+	keys, err := s.db.ListPGP(user.Username, addr)
 	if err != nil {
 		s.log.Error(err, "user can not be validated")
 		return errIntSrvErr
@@ -279,7 +279,7 @@ func (s *Server) remove(c echo.Context) error {
 	}
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
-	err = s.db.DeleteUser(name, &addr)
+	err = s.db.DeleteUser(name, addr)
 	if err != nil {
 		s.log.Error(err, "delete user's records failed")
 		return errIntSrvErr
@@ -320,7 +320,7 @@ func (s *Server) save(c echo.Context) error {
 	}
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
-	err = s.db.Push(name, body.Hash, body.Payload, &addr)
+	err = s.db.Push(name, body.Hash, body.Payload, addr)
 	if err != nil {
 		s.log.Debug(err, "save payload failed")
 		return errBadReq
@@ -342,7 +342,7 @@ func (s *Server) logs(c echo.Context) error {
 	}
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
-	actions, err := s.db.GetLog(name, &addr)
+	actions, err := s.db.GetLog(name, addr)
 	if err != nil {
 		s.log.Debug(err, "get logs request failed")
 		return errBadReq
@@ -376,7 +376,7 @@ func (s *Server) get(c echo.Context) error {
 	}
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
-	secret, err := s.db.Pull(name, r.Checksum, &addr)
+	secret, err := s.db.Pull(name, r.Checksum, addr)
 	if err != nil {
 		s.log.Debug(err, "pull request failed")
 		return errBadReq
@@ -401,7 +401,7 @@ func (s *Server) versions(c echo.Context) error {
 	s.log.Trace(nil, c.Request().RequestURI)
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
-	versions, err := s.db.Versions(name, &addr)
+	versions, err := s.db.Versions(name, addr)
 	if err != nil {
 		s.log.Debug(err, "get versions failed")
 		return errBadReq
@@ -425,7 +425,7 @@ func (s *Server) listpgp(c echo.Context) error {
 	}
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
-	list, err := s.db.ListPGP(name, &addr)
+	list, err := s.db.ListPGP(name, addr)
 	if err != nil {
 		s.log.Debug(err, "get versions failed")
 		return errBadReq
@@ -455,7 +455,7 @@ func (s *Server) addpgp(c echo.Context) error {
 	}
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
-	err = s.db.AddPGP(name, key.Publickey, false, &addr)
+	err = s.db.AddPGP(name, key.Publickey, false, addr)
 	if err != nil {
 		s.log.Debug(err, "add pgp public key failed failed")
 		return errBadReq
@@ -483,7 +483,7 @@ func (s *Server) revokepgp(c echo.Context) error {
 	}
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
-	err = s.db.RevokePGP(name, key.Publickey, &addr)
+	err = s.db.RevokePGP(name, key.Publickey, addr)
 	if err != nil {
 		s.log.Debug(err, "pgp public key revoke failed")
 		return errBadReq
@@ -510,7 +510,7 @@ func (s *Server) confirmpgp(c echo.Context) error {
 	}
 	ip := strings.Split(c.Request().RemoteAddr, ":")
 	addr := net.ParseIP(ip[0])
-	err = s.db.ConfirmPGP(name, key.Publickey, &addr)
+	err = s.db.ConfirmPGP(name, key.Publickey, addr)
 	if err != nil {
 		s.log.Debug(err, "pgp public key confirm failed")
 		return errBadReq

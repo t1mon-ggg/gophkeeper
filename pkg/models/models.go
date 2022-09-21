@@ -16,7 +16,7 @@ type User struct {
 type Action struct {
 	Action   string    `json:"action"`   //
 	Checksum string    `json:"checksum"` //
-	IP       *net.IP   `json:"ip"`       //
+	IP       net.IP    `json:"ip"`       //
 	Date     time.Time `json:"time"`     //
 }
 
