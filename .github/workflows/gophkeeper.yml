@@ -30,9 +30,25 @@ jobs:
           GOOS=arm GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_arm
           GOOS=arm GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_arm64
 
-          GOOS=darwin GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_darwin
-          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_darwin64
 
+          cd ../../cmd/server
+          mkdir release
+          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client.exe
+          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client64.exe
+
+          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client
+          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client64
+
+          GOOS=arm GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client_arm
+          GOOS=arm GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client_arm64
+
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release
+          path: |
+            cmd/server/release
+            cmd/client/release
       # - name: Build server binary
       #   run: |
       #     cd cmd/shortener
