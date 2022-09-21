@@ -46,23 +46,23 @@ jobs:
         run: |
           cd cmd/server
           mkdir release
-          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=${{ RELEASE_VERSION }} -X main.buildDate=${{ BUILD_TIME }} -X main.buildCommit=${{ GIT_SHA }}' -o release/server.exe
-          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ RELEASE_VERSION }} -X main.buildDate=${{ BUILD_TIME }} -X main.buildCommit=${{ GIT_SHA }}' -o release/server64.exe
+          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=${{ env.RELEASE_VERSION }} -X main.buildDate=${{ env.BUILD_TIME }} -X main.buildCommit=${{ env.GIT_SHA }}' -o release/server.exe
+          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ env.RELEASE_VERSION }} -X main.buildDate=${{ env.BUILD_TIME }} -X main.buildCommit=${{ env.GIT_SHA }}' -o release/server64.exe
 
-          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=${{ RELEASE_VERSION }} -X main.buildDate=${{ BUILD_TIME }} -X main.buildCommit=${{ GIT_SHA }}' -o release/server
-          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ RELEASE_VERSION }} -X main.buildDate=${{ BUILD_TIME }} -X main.buildCommit=${{ GIT_SHA }}' -o release/server64
+          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=${{ env.RELEASE_VERSION }} -X main.buildDate=${{ env.BUILD_TIME }} -X main.buildCommit=${{ env.GIT_SHA }}' -o release/server
+          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ env.RELEASE_VERSION }} -X main.buildDate=${{ env.BUILD_TIME }} -X main.buildCommit=${{ env.GIT_SHA }}' -o release/server64
 
-          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ RELEASE_VERSION }} -X main.buildDate=${{ BUILD_TIME }} -X main.buildCommit=${{ GIT_SHA }}' -o release/server_darwin64
+          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ env.RELEASE_VERSION }} -X main.buildDate=${{ env.BUILD_TIME }} -X main.buildCommit=${{ env.GIT_SHA }}' -o release/server_darwin64
 
           cd ../client
           mkdir release
-          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=${{ RELEASE_VERSION }} -X main.buildDate=${{ BUILD_TIME }} -X main.buildCommit=${{ GIT_SHA }}' -o release/client.exe
-          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ RELEASE_VERSION }} -X main.buildDate=${{ BUILD_TIME }} -X main.buildCommit=${{ GIT_SHA }}' -o release/client64.exe
+          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=${{ env.RELEASE_VERSION }} -X main.buildDate=${{ env.BUILD_TIME }} -X main.buildCommit=${{ env.GIT_SHA }}' -o release/client.exe
+          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ env.RELEASE_VERSION }} -X main.buildDate=${{ env.BUILD_TIME }} -X main.buildCommit=${{ env.GIT_SHA }}' -o release/client64.exe
 
-          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=${{ RELEASE_VERSION }} -X main.buildDate=${{ BUILD_TIME }} -X main.buildCommit=${{ GIT_SHA }}' -o release/client
-          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ RELEASE_VERSION }} -X main.buildDate=${{ BUILD_TIME }} -X main.buildCommit=${{ GIT_SHA }}' -o release/client64
+          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=${{ env.RELEASE_VERSION }} -X main.buildDate=${{ env.BUILD_TIME }} -X main.buildCommit=${{ env.GIT_SHA }}' -o release/client
+          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ env.RELEASE_VERSION }} -X main.buildDate=${{ env.BUILD_TIME }} -X main.buildCommit=${{ env.GIT_SHA }}' -o release/client64
 
-          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ RELEASE_VERSION }} -X main.buildDate=${{ BUILD_TIME }} -X main.buildCommit=${{ GIT_SHA }}' -o release/client_darwin64
+          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=${{ env.RELEASE_VERSION }} -X main.buildDate=${{ env.BUILD_TIME }} -X main.buildCommit=${{ env.GIT_SHA }}' -o release/client_darwin64
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:
