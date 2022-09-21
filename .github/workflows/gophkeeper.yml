@@ -19,7 +19,7 @@ jobs:
       - name: Build server binary
         run: |
 
-          echo ${{  github.ref_name }}
+          echo "!@@@@ ${{  github.ref_name }}"
           cd cmd/server
           mkdir release
           GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion="" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=""' -o release/server.exe

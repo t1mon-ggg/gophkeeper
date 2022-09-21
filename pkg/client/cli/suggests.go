@@ -63,6 +63,7 @@ var (
 		{Text: "password", Description: "set up username"},
 		{Text: "description", Description: "define secret description"},
 	}
+
 	creditcardSuggest = []prompt.Suggest{ // suggest for credit card
 		{Text: "number", Description: "set up credit card number"},
 		{Text: "holder", Description: "set up credit hard holder name"},
