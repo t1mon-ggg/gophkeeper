@@ -40,37 +40,38 @@ jobs:
         run: |
           echo "GIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
           echo "GIT_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
-          echo "BUILD_TIME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "BUILD_TIME=$(date +"%Y/%m/%d %H:%M:%S")" >> $GITHUB_ENV
       - name: Use environment variables
         run: |
           echo "GIT_SHA=${GIT_SHA}"
           echo "GIT_BRANCH=${GIT_BRANCH}"
           echo "BUILD_TIME=${BUILD_TIME}"
           echo "test=$(export)"
+          echo "test=$(git tag)"
       - name: Build server binary
         run: |
           tag=$(git tag)
           hash=$(git rev-parse --verify HEAD)
-          ts=$(date +"%Y/%m/%d %H:%M:%S")
+          ts=
           cd cmd/server
           mkdir release
-          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${ts} -X main.buildCommit=${GIT_SHA}' -o release/server.exe
-          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${ts} -X main.buildCommit=${GIT_SHA}' -o release/server64.exe
+          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/server.exe
+          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/server64.exe
 
-          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${ts} -X main.buildCommit=${GIT_SHA}' -o release/server
-          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${ts} -X main.buildCommit=${GIT_SHA}' -o release/server64
+          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/server
+          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/server64
 
-          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${ts} -X main.buildCommit=${GIT_SHA}' -o release/server_darwin64
+          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/server_darwin64
 
           cd ../client
           mkdir release
-          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${ts} -X main.buildCommit=${GIT_SHA}' -o release/client.exe
-          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${ts} -X main.buildCommit=${GIT_SHA}' -o release/client64.exe
+          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/client.exe
+          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/client64.exe
 
-          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${ts} -X main.buildCommit=${GIT_SHA}' -o release/client
-          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${ts} -X main.buildCommit=${GIT_SHA}' -o release/client64
+          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/client
+          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/client64
 
-          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${ts} -X main.buildCommit=${GIT_SHA}' -o release/client_darwin64
+          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=${tag} -X main.buildDate=${BUILD_TIME} -X main.buildCommit=${GIT_SHA}' -o release/client_darwin64
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:
