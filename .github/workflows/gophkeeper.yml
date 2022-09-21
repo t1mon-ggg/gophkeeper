@@ -27,7 +27,6 @@ jobs:
           GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server
           GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server64
 
-          GOOS=darwin GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_darwin
           GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_darwin64
 
           cd ../../cmd/server
@@ -38,7 +37,6 @@ jobs:
           GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client
           GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client64
 
-          GOOS=darwin GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client_darwin
           GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client_darwin64
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
