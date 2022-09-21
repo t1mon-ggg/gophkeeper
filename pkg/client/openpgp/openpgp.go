@@ -18,24 +18,27 @@ import (
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
 )
 
+// passphrase - struct for pgp passhrase from env
 type passpharse struct {
 	PP string `env:"KEEPER_PGP_PASSPHRASE"`
 }
 
 var (
-	log      logging.Logger
-	errPGP   = errors.New("openpgp failed")
-	once     sync.Once
-	_keyring *OpenPGP
+	log      logging.Logger                 // package logger
+	errPGP   = errors.New("openpgp failed") // pgp error
+	once     sync.Once                      // initialization with singletone pattern
+	_keyring *OpenPGP                       // current keyring
 )
 
+// OpenPGP - openpgp endpoint struct
 type OpenPGP struct {
-	pubkey     string
-	passphrase []byte
-	Public     *pgpcrypto.KeyRing
-	Private    *pgpcrypto.KeyRing
+	pubkey     string             // current public key of machine in armored format
+	passphrase []byte             // current pgpg passphrase
+	Public     *pgpcrypto.KeyRing // public keyring
+	Private    *pgpcrypto.KeyRing // private keyring
 }
 
+// New() - pgp initialization
 func New() (*OpenPGP, error) {
 	var err error
 	once.Do(func() {
@@ -112,10 +115,12 @@ func New() (*OpenPGP, error) {
 	return _keyring, nil
 }
 
+// GetPublicKey - retrun runnig public key
 func (p *OpenPGP) GetPublicKey() string {
 	return p.pubkey
 }
 
+// AddPublicKey - add new public key to keyring
 func (p *OpenPGP) AddPublicKey(armored []byte) error {
 	key, err := pgpcrypto.NewKeyFromArmored(string(armored))
 	if err != nil {
@@ -131,6 +136,7 @@ func (p *OpenPGP) AddPublicKey(armored []byte) error {
 	return nil
 }
 
+// AddPrivateKey - add private key to keyring
 func (p *OpenPGP) AddPrivateKey(armored []byte) error {
 	key, err := pgpcrypto.NewKeyFromArmored(string(armored))
 	if err != nil {
@@ -165,6 +171,7 @@ func (p *OpenPGP) AddPrivateKey(armored []byte) error {
 	return nil
 }
 
+// GeneratePair - generate key pair for current PC. name is machine-id
 func (p *OpenPGP) GeneratePair() error {
 	name, err := machineid.ID()
 	if err != nil {
@@ -240,6 +247,7 @@ func (p *OpenPGP) GeneratePair() error {
 	return nil
 }
 
+// ReloadPublicKeys - reload public key ring with keys hashsums
 func (p *OpenPGP) ReloadPublicKeys(keys []string) error {
 	pub, err := pgpcrypto.NewKeyRing(nil)
 	if err != nil {
@@ -258,6 +266,7 @@ func (p *OpenPGP) ReloadPublicKeys(keys []string) error {
 	return nil
 }
 
+// ReadFolder - read PC keys from openpgp folder
 func (p *OpenPGP) ReadFolder(name string) error {
 	pubfilename := fmt.Sprintf("./openpgp/%s.pub", name)
 	privfilename := fmt.Sprintf("./openpgp/%s.gpg", name)
@@ -295,6 +304,7 @@ func (p *OpenPGP) ReadFolder(name string) error {
 	return nil
 }
 
+// EncryptWithKeys - encrypt data with public keyring
 func (p *OpenPGP) EncryptWithKeys(data []byte) ([]byte, error) {
 	if len(data) == 0 {
 		log.Warn(errors.New("encryptable data is missing"), "nothing to encrypt")
@@ -318,6 +328,7 @@ func (p *OpenPGP) EncryptWithKeys(data []byte) ([]byte, error) {
 	return []byte(armor), nil
 }
 
+// DecryptWithKey - decrypt data with PC's private key
 func (p *OpenPGP) DecryptWithKey(data []byte) ([]byte, error) {
 	if len(data) == 0 {
 		log.Warn(errors.New("decryptable data is missing"), "nothing to encrypt")

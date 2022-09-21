@@ -22,6 +22,7 @@ type zeroLogger struct {
 }
 
 // New - new logger with custom destination(s). logger print pretty string to os.Stderr and json to out
+//   out... may be any implemets method io.Write. To out log will be written in json format
 func New(out ...io.Writer) logging.Logger {
 	once.Do(func() {
 		_zl = new(zeroLogger)

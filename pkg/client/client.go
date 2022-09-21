@@ -15,6 +15,7 @@ import (
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
 )
 
+// KeeperClient - keeper client struct
 type KeeperClient struct {
 	wg      *sync.WaitGroup
 	log     logging.Logger
@@ -79,6 +80,7 @@ func New() *KeeperClient {
 	return kc
 }
 
+// Start - start cleint
 func (kc *KeeperClient) Start() {
 	helpers.SaveTermState()
 	kc.WG().Add(1)

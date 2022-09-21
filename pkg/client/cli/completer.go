@@ -8,6 +8,7 @@ import (
 	"github.com/t1mon-ggg/gophkeeper/pkg/helpers"
 )
 
+// completer - live TUI input suggestion
 func (c *CLI) completer(in prompt.Document) []prompt.Suggest {
 	w := in.GetWordBeforeCursor()
 	line := in.Text
@@ -105,6 +106,7 @@ func (c *CLI) completer(in prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(s, w, true)
 }
 
+// changelivePrefix - chage current TUI prefix
 func changelivePrefix() (string, bool) {
 	return livePrefixState.livePrefix, livePrefixState.isEnable
 }

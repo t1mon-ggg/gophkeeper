@@ -1,3 +1,6 @@
+//go:build windows || linux || darwin || arm
+// +build windows linux darwin arm
+
 package main
 
 import (

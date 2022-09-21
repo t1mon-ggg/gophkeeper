@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
 )
 
+// CLI - struct of TUI
 type CLI struct {
 	wg      *sync.WaitGroup
 	storage storage.Storage
@@ -26,15 +28,16 @@ type CLI struct {
 	api     remote.Actions
 }
 
+// livePrefixState - internal function for live prefix
 var livePrefixState struct {
 	livePrefix string
 	isEnable   bool
 }
 
 var (
-	suggests       map[string][]prompt.Suggest
-	s              []prompt.Suggest
-	activeModeUser = []prompt.Suggest{
+	suggests       map[string][]prompt.Suggest // current list os suggests
+	s              []prompt.Suggest            // dynamic list os suggests
+	activeModeUser = []prompt.Suggest{         // appendable suggest if mode is client-server for user actions
 		{Text: "roster", Description: "list all any time logged in users"},
 		{Text: "revoke", Description: "revoke pgp public key"},
 		{Text: "confirm", Description: "confirm user connection and add pgp public key to key ring"},
@@ -42,7 +45,7 @@ var (
 		{Text: "save", Description: "save changes"},
 		{Text: "..", Description: "go to up level"},
 	}
-	activeMode = []prompt.Suggest{
+	activeMode = []prompt.Suggest{ // appendable suggest if mode is client-server for root
 		{Text: "cmd", Description: "working area"},
 		{Text: "config", Description: "configuration area"},
 		{Text: "status", Description: "get current connection state"},
@@ -51,7 +54,7 @@ var (
 		{Text: "quit", Description: "save changes and exit"},
 		{Text: "save", Description: "save changes"},
 	}
-	activeModeHistory = []prompt.Suggest{
+	activeModeHistory = []prompt.Suggest{ // appendable suggest if mode is client-server for history actions
 		{Text: "timemachine", Description: "print all time stamps of vault"},
 		{Text: "rollback", Description: "rollback to vault hash"},
 		{Text: "quit", Description: "save changes and exit"},
@@ -60,14 +63,16 @@ var (
 	}
 )
 
+// init - initialization of suggests
 func init() {
 	suggests = initSuggest
 	s = suggests[">>> "]
 }
 
+// Start - start TUI
 func (c *CLI) Start() {
 	if c.config.Mode != "standalone" {
-		err := c.Remote()
+		err := c.remote()
 		if err != nil {
 			c.log().Error(err, "remote connection failed")
 			c.log().Warn(err, "continue in standalone mode")
@@ -93,10 +98,12 @@ func (c *CLI) Start() {
 	p.Run()
 }
 
+// log - usefull func only for internal usage. compact version for logging
 func (c *CLI) log() logging.Logger {
 	return c.logger
 }
 
+// New -initalization of TUI
 func New(wg *sync.WaitGroup) *CLI {
 	cli := new(CLI)
 	cli.logger = zerolog.New().WithPrefix("cli")
@@ -110,7 +117,8 @@ func New(wg *sync.WaitGroup) *CLI {
 	return cli
 }
 
-func (c *CLI) Remote() error {
+// remote - initialize remote connection for TUI
+func (c *CLI) remote() error {
 	var signup bool
 	err := c.api.Login(c.config.Username, c.config.Password, c.crypto.GetPublicKey())
 	if err != nil {
@@ -134,6 +142,7 @@ func (c *CLI) Remote() error {
 	for _, key := range pgps {
 		if key.Publickey == c.crypto.GetPublicKey() && !key.Confirmed {
 			c.log().Error(nil, "current pgp key pair not confirmed. please wait for confirmation")
+			fmt.Printf("Current Public key checksum is ")
 			helpers.RestoreTermState()
 			os.Exit(0)
 		}

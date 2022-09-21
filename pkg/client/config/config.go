@@ -78,9 +78,6 @@ func (c *Config) SetByEnv() *Config {
 		c.log().Warnf("read environment failed with error: %v", err)
 		return c
 	}
-	// if cc.PGPPass != "" {
-	// 	c.PGPPass = cc.PGPPass
-	// }
 	if cc.Username != "" {
 		c.Username = cc.Username
 	}
@@ -99,29 +96,29 @@ func (c *Config) SetByEnv() *Config {
 //Configuring flags
 var (
 	remoteHTTPFlag = flag.String("remote-http", "", "Set up remote URL.\nExample: -remote-http=\"https://localhost.ltd:8443\"")
-	remoteGRPCFlag = flag.String("remote-grpc", "", "Set up remote URL.\nExample: -remote-grpc=\"localhost.ltd:3200\"")
-	usernameFlag   = flag.String("username", "", "Set up username for authorization on remote.\nExample: -username=\"username\"")
-	passwordFlag   = flag.String("password", "", "Set up password for authorization on remote.\nExample: -password=\"password\"")
-	loglevelFlag   = flag.String("loglevel", "info", "Set up logging level.\nExample: -loglevel=info\nAvailible level are trace, debug, info, warn, error, fatal, panic.")
-	storageFlag    = flag.String("storage", "", "Set up storage path.\nExample: -storage=\"storage.db\"")
-	configFlag     = flag.String("config", "", "Set up configuration file path.\n Example: -config=config.json")
+	// remoteGRPCFlag = flag.String("remote-grpc", "", "Set up remote URL.\nExample: -remote-grpc=\"localhost.ltd:3200\"")
+	usernameFlag = flag.String("username", "", "Set up username for authorization on remote.\nExample: -username=\"username\"")
+	passwordFlag = flag.String("password", "", "Set up password for authorization on remote.\nExample: -password=\"password\"")
+	loglevelFlag = flag.String("loglevel", "info", "Set up logging level.\nExample: -loglevel=info\nAvailible level are trace, debug, info, warn, error, fatal, panic.")
+	storageFlag  = flag.String("storage", "", "Set up storage path.\nExample: -storage=\"storage.db\"")
+	configFlag   = flag.String("config", "", "Set up configuration file path.\n Example: -config=config.json")
 )
 
 //SetByFlags - set configuration values from cli flags
-//	-remote
-//	-username
-//	-password
-//  -loglevel
-//  -config
+//	-remote-http http address of server
+//	-username vault name flag
+//	-password vault password
+//  -loglevel setup logging level
+//  -config path to config file
 func (c *Config) SetByFlags() *Config {
 	flag.Parse()
 	if flag.Parsed() {
 		if remoteHTTPFlag != nil && *remoteHTTPFlag != "" {
 			c.RemoteHTTP = *remoteHTTPFlag
 		}
-		if remoteGRPCFlag != nil && *remoteGRPCFlag != "" {
-			c.RemoteGRPC = *remoteGRPCFlag
-		}
+		// if remoteGRPCFlag != nil && *remoteGRPCFlag != "" {
+		// 	c.RemoteGRPC = *remoteGRPCFlag
+		// }
 		if usernameFlag != nil && *usernameFlag != "" {
 			c.Username = *usernameFlag
 		}
@@ -178,11 +175,12 @@ func (c *Config) SetByFile() *Config {
 	return cc
 }
 
+// Level - get current logging level
 func (c *Config) Level() logging.Level {
 	return logging.Level(c.LogLevel)
 }
 
-// isFlagPassed - checking the using of the flag
+// GetRunning - get pinter of running configuration
 func GetRunning() *Config {
 	return _running
 }

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
+	"github.com/t1mon-ggg/gophkeeper/pkg/models"
 	"golang.org/x/term"
 )
 
@@ -79,6 +80,7 @@ func ReadSecret(msg string) (string, error) {
 	return secret, nil
 }
 
+// SaveTermState - save terminal state on start
 func SaveTermState() {
 	oldState, err := term.GetState(int(os.Stdin.Fd()))
 	if err != nil {
@@ -87,12 +89,14 @@ func SaveTermState() {
 	termState = oldState
 }
 
+// RestoreTermState - restore terminal state on exit
 func RestoreTermState() {
 	if termState != nil {
 		term.Restore(int(os.Stdin.Fd()), termState)
 	}
 }
 
+// FindCommand - find commant in TUI user input
 func FindCommand(in string) (string, bool) {
 	for _, cmd := range cmds {
 		if strings.Contains(in, cmd) {
@@ -102,6 +106,7 @@ func FindCommand(in string) (string, bool) {
 	return "", false
 }
 
+// GetNameFromToken - get vault name from jwt token value
 func GetNameFromToken(token string) (string, error) {
 	log := zerolog.New().WithPrefix("helper")
 	type p struct {
@@ -127,6 +132,7 @@ func GetNameFromToken(token string) (string, error) {
 	return u.Name, nil
 }
 
+// GetExpirationFromToken - get expiration time from jwt token value
 func GetExpirationFromToken(token string) (*time.Time, error) {
 	log := zerolog.New().WithPrefix("helper")
 	type p struct {
@@ -162,4 +168,38 @@ func IsFlagPassed(name string) bool {
 		}
 	})
 	return found
+}
+
+// OnlyOne - remove duplicate versions
+func OnlyOne(in []models.Version) []models.Version {
+	var checked []string
+	var latests []models.Version
+	for _, vv := range in {
+		if included(checked, vv.Hash) {
+			continue
+		}
+		checked = append(checked, vv.Hash)
+		var timestamp time.Time
+		var latest string
+		for _, v := range in {
+			if vv.Hash == v.Hash {
+				if v.Date.After(timestamp) {
+					timestamp = v.Date
+					latest = v.Hash
+				}
+
+			}
+		}
+		latests = append(latests, models.Version{Date: timestamp, Hash: latest})
+	}
+	return latests
+}
+
+func included(hashes []string, hash string) bool {
+	for _, h := range hashes {
+		if h == hash {
+			return true
+		}
+	}
+	return false
 }

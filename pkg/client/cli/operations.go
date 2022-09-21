@@ -20,6 +20,7 @@ import (
 	"github.com/t1mon-ggg/gophkeeper/pkg/helpers"
 )
 
+// save - save current state
 func (c *CLI) save() {
 	buf, err := c.storage.Save()
 	if err != nil {
@@ -55,6 +56,7 @@ func (c *CLI) save() {
 	}
 }
 
+// insert - insert new secret to vault
 func (c *CLI) insert(in string) {
 	args := strings.Split(in, " ")
 	if len(args) < 3 {
@@ -203,6 +205,7 @@ func (c *CLI) insert(in string) {
 	}
 }
 
+// list - list secrets
 func (c *CLI) list() {
 	lst := c.storage.ListSecrets()
 	if len(lst) == 0 {
@@ -225,6 +228,7 @@ func (c *CLI) list() {
 	t.Render()
 }
 
+// get - get secret value
 func (c *CLI) get(name string, opts ...string) {
 	secret := c.storage.GetSecret(name)
 	if secret == nil {
@@ -281,10 +285,12 @@ func (c *CLI) get(name string, opts ...string) {
 	}
 }
 
+// delete - remove secret from vault
 func (c *CLI) delete(name string) {
 	c.storage.DeleteSecret(name)
 }
 
+// status - print current status
 func (c *CLI) status() {
 	fmt.Println()
 	fmt.Printf("Current execution mode is %s\n", c.config.Mode)
@@ -300,6 +306,7 @@ func (c *CLI) status() {
 	fmt.Println()
 }
 
+// view - print running config in json format
 func (c *CLI) view() {
 	cfg, err := json.MarshalIndent(c.config, "", "  ")
 	if err != nil {
@@ -309,6 +316,7 @@ func (c *CLI) view() {
 	fmt.Println(string(cfg))
 }
 
+// confirm - confirm new pgp public key
 func (c *CLI) confirm(checksum string) {
 	lst, err := c.api.ListPGP()
 	if err != nil {

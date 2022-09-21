@@ -13,6 +13,7 @@ import (
 	"github.com/mgutz/ansi"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/t1mon-ggg/gophkeeper/pkg/helpers"
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging"
 	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
 	"github.com/t1mon-ggg/gophkeeper/pkg/models"
@@ -66,7 +67,7 @@ const (
 	logAction     = `INSERT INTO public.logs (username, ip, action, time, checksum) VALUES( $1, $2, $3, $4, $5 );`
 	logView       = `SELECT time, ip, action, checksum FROM public.logs WHERE username=$1;`
 	pushData      = `INSERT INTO public.keeper (username, checksum, time, content) VALUES ( $1, $2, $3, $4);`
-	pullData      = `SELECT content FROM public.keeper WHERE username=$1 AND checksum=$2`
+	pullData      = `SELECT content, time FROM public.keeper WHERE username=$1 AND checksum=$2`
 	pullVersions  = `SELECT time, checksum FROM public.keeper WHERE username=$1`
 	listPGP       = `SELECT time, publickey, confirmed FROM public.openpgp WHERE revoked=false AND username=$1;`
 	addPGP        = `INSERT INTO public.openpgp (username, publickey, time, confirmed) VALUES ( $1, $2, $3, $4 );`
@@ -193,14 +194,29 @@ func (s *psqlStorage) Pull(username, checksum string, ip *net.IP) ([]byte, error
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	now := time.Now()
-	var data string
-	err := s.db.QueryRow(ctx, pullData, username, checksum).Scan(&data)
+	rows, err := s.db.Query(ctx, pullData, username, checksum)
 	if err != nil {
 		s.log().Error(err, "get secret failed")
 		return []byte{}, err
 	}
+	var latest []byte
+	var timestamp time.Time
+	for rows.Next() {
+		var content string
+		var ts time.Time
+		err := rows.Scan(&content, &ts)
+		if err != nil {
+			s.log().Error(err, "row scan failed")
+		}
+		if ts.After(timestamp) {
+			s.log().Tracef("latest timestamp %s with hash %s", nil, ts.Format(time.RFC822), checksum)
+			s.log().Trace(nil, content)
+			latest = []byte(content)
+		}
+	}
+	s.log().Trace(nil, "result ", string(latest))
 	s.SaveLog(username, "pull", checksum, ip, now)
-	return []byte(data), nil
+	return latest, nil
 }
 
 func (s *psqlStorage) Versions(username string, ip *net.IP) ([]models.Version, error) {
@@ -230,7 +246,7 @@ func (s *psqlStorage) Versions(username string, ip *net.IP) ([]models.Version, e
 		versions = append(versions, v)
 	}
 	s.SaveLog(username, "get versions", "", ip, now)
-	return versions, nil
+	return helpers.OnlyOne(versions), nil
 }
 
 func (s *psqlStorage) SaveLog(username, action, checksum string, ip *net.IP, date time.Time) error {

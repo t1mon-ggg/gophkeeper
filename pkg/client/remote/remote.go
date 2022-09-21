@@ -2,6 +2,7 @@ package remote
 
 import "github.com/t1mon-ggg/gophkeeper/pkg/models"
 
+// Actions - interface of actions with server
 type Actions interface {
 	Login(username, password, public string) error
 	Register(username, password, public string) error

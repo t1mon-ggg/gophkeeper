@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	// static - default web page
 	static = `<h1 id="gophkeeper">gophkeeper</h1>
 <h2 id="-">Общие требования</h2>
 <p>GophKeeper представляет собой клиент-серверную систему, позволяющую пользователю надёжно и безопасно хранить логины, пароли, бинарные данные и прочую приватную информацию.</p>
@@ -62,6 +63,7 @@ func hello(c echo.Context) error {
 	return c.String(http.StatusOK, static)
 }
 
+// Applystatic - apply static contenct to echo endpoint
 func ApplyStatic(echo *echo.Echo) *echo.Echo {
 	e = echo
 	e.File("/favicon.ico", "favicon.ico")

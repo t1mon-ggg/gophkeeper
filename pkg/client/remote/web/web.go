@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/gorilla/websocket"
+	"github.com/mgutz/ansi"
 
 	"github.com/t1mon-ggg/gophkeeper/pkg/client/config"
 	"github.com/t1mon-ggg/gophkeeper/pkg/client/remote"
@@ -26,18 +28,20 @@ import (
 
 var (
 	once    sync.Once
-	_client *webclient
+	_client *WebClient
 )
 
-type webclient struct {
+// WebClient - go-resty and websocket client struct
+type WebClient struct {
 	client *resty.Client
 	logger logging.Logger
 	jar    *cookiejar.Jar
 	wsSig  chan struct{}
 }
 
+// New() -initialize http client
 func New() remote.Actions {
-	client := new(webclient)
+	client := new(WebClient)
 	once.Do(func() {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
@@ -58,11 +62,20 @@ func New() remote.Actions {
 	return _client
 }
 
-func (c *webclient) log() logging.Logger {
+// log - usefull shot for call log
+func (c *WebClient) log() logging.Logger {
 	return c.logger
 }
 
-func (c *webclient) Login(username, password, public string) error {
+// Login - login action
+//   Statuses:
+//   200 - login successfull
+//	 208 - PGP key not confirmed yet, but other users notified
+//   400 - wrong request
+//   401 - username or password not found
+//   403 - PGP key not confirmed
+//   500 - internal server error
+func (c *WebClient) Login(username, password, public string) error {
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(
@@ -106,7 +119,11 @@ func (c *webclient) Login(username, password, public string) error {
 	return nil
 }
 
-func (c *webclient) Register(username, password, public string) error {
+// Register - signup action
+//   Statuses:
+//   201 - success
+//   500 - internal server error
+func (c *WebClient) Register(username, password, public string) error {
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(
@@ -127,7 +144,11 @@ func (c *webclient) Register(username, password, public string) error {
 	return nil
 }
 
-func (c *webclient) Delete() error {
+// Delete - delete action
+//   Statuses:
+//   202 - deleted
+//   500 - internal server error
+func (c *WebClient) Delete() error {
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
 		Post("api/v1/keeper/remove")
@@ -142,7 +163,11 @@ func (c *webclient) Delete() error {
 	return nil
 }
 
-func (c *webclient) Push(payload, hashsum string) error {
+// Push - delete action
+//   Statuses:
+//   200 - saved
+//   500 - internal server error
+func (c *WebClient) Push(payload, hashsum string) error {
 	data := models.Content{Payload: payload, Hash: hashsum}
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
@@ -159,7 +184,12 @@ func (c *webclient) Push(payload, hashsum string) error {
 	return nil
 }
 
-func (c *webclient) GetLogs() ([]models.Action, error) {
+// GetLogs - get action logs
+//   Statuses:
+//   200 - success
+//   202 - no logs
+//   500 - internal server error
+func (c *WebClient) GetLogs() ([]models.Action, error) {
 	actions := []models.Action{}
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
@@ -184,7 +214,12 @@ func (c *webclient) GetLogs() ([]models.Action, error) {
 	return actions, nil
 }
 
-func (c *webclient) Pull(checksum string) ([]byte, error) {
+// Pull - get specific vrecion of vault
+//   Statuses:
+//   200 - success
+//   202 - not found
+//   500 - internal server error
+func (c *WebClient) Pull(checksum string) ([]byte, error) {
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
 		SetQueryParams(map[string]string{"checksum": checksum}).
@@ -204,7 +239,12 @@ func (c *webclient) Pull(checksum string) ([]byte, error) {
 	return response.Body(), nil
 }
 
-func (c *webclient) Versions() ([]models.Version, error) {
+// Versions - get list of vault versions
+//   Statuses:
+//   200 - success
+//   202 - not found
+//   500 - internal server error
+func (c *WebClient) Versions() ([]models.Version, error) {
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
 		Get("api/v1/keeper/pull/versions")
@@ -229,7 +269,12 @@ func (c *webclient) Versions() ([]models.Version, error) {
 	return versions, nil
 }
 
-func (c *webclient) ListPGP() ([]models.PGP, error) {
+// ListPGP - get list of vault pgp public keys
+//   Statuses:
+//   200 - success
+//   202 - not found
+//   500 - internal server error
+func (c *WebClient) ListPGP() ([]models.PGP, error) {
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
 		Get("api/v1/keeper/pgp/list")
@@ -254,7 +299,11 @@ func (c *webclient) ListPGP() ([]models.PGP, error) {
 	return keys, nil
 }
 
-func (c *webclient) AddPGP(publickey string) error {
+// AddPGP - add public key to vault pgp public keys
+//   Statuses:
+//   202 - success
+//   500 - internal server error
+func (c *WebClient) AddPGP(publickey string) error {
 	body := models.PGP{Publickey: publickey}
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
@@ -271,7 +320,11 @@ func (c *webclient) AddPGP(publickey string) error {
 	return nil
 }
 
-func (c *webclient) ConfirmPGP(publickey string) error {
+// ConfirmPGP - configrm  vault pgp public key
+//   Statuses:
+//   200 - success
+//   500 - internal server error
+func (c *WebClient) ConfirmPGP(publickey string) error {
 	body := models.PGP{Publickey: publickey}
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
@@ -288,7 +341,11 @@ func (c *webclient) ConfirmPGP(publickey string) error {
 	return nil
 }
 
-func (c *webclient) RevokePGP(publickey string) error {
+// RevokePGP - revoke  vault pgp public key
+//   Statuses:
+//   410 - success
+//   500 - internal server error
+func (c *WebClient) RevokePGP(publickey string) error {
 	body := models.PGP{Publickey: publickey}
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
@@ -305,13 +362,15 @@ func (c *webclient) RevokePGP(publickey string) error {
 	return nil
 }
 
-func (c *webclient) Close() error {
+// Close - close http connection
+func (c *WebClient) Close() error {
 	c.log().Trace(nil, "closing websocket connection")
 	close(c.wsSig)
 	return nil
 }
 
-func (c *webclient) NewStream() error {
+// NewStream - initialize and start websocket connection
+func (c *WebClient) NewStream() error {
 	c.wsSig = make(chan struct{})
 	r := config.New().RemoteHTTP
 	rr := strings.Split(r, "/")
@@ -336,7 +395,7 @@ func (c *webclient) NewStream() error {
 				return
 			default:
 				_, message, wsErr := conn.ReadMessage()
-				if err != nil {
+				if wsErr != nil {
 					c.log().Error(wsErr, "read from websocket error")
 					return
 				}
@@ -354,12 +413,16 @@ func (c *webclient) NewStream() error {
 						c.log().Error(err, "message can not be parsed")
 					}
 					if strings.Contains(msg, "new client with unknown pgp key") {
+						fmt.Println(ansi.Color("------------------------------------------------------------------------", "reb+b"))
 						c.log().Warn(nil, "Unknow PGP Public key registered. Please chek and confirm or revoke key")
 						c.log().Warn(nil, "Registered key is\n", m.Content)
+						fmt.Println(ansi.Color("------------------------------------------------------------------------", "reb+b"))
 					}
 					if strings.Contains(msg, "new version recieved") && storage.New().HashSum() != m.Content {
+						fmt.Println(ansi.Color("------------------------------------------------------------------------", "reb+b"))
 						c.log().Warn(nil, "New version on keeper storage saved to server. Please sync local with remote")
 						c.log().Warn(nil, "Newly registered checksum is ", m.Content)
+						fmt.Println(ansi.Color("------------------------------------------------------------------------", "reb+b"))
 					}
 				}
 			}

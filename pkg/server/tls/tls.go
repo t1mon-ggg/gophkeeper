@@ -19,6 +19,7 @@ import (
 
 var log logging.Logger
 
+// Prepare - initialize ssl keys if they are not exists
 func Prepare() {
 	log = zerolog.New().WithPrefix("tls")
 	if !helpers.FileExists("./ssl") {

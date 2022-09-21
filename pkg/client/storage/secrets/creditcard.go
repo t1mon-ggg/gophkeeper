@@ -6,6 +6,7 @@ import (
 
 const scopeCC = "creditcard"
 
+// CreditCard - type for credit card secret
 type CreditCard struct {
 	Number string
 	Holder string
@@ -13,6 +14,7 @@ type CreditCard struct {
 	Expire time.Time
 }
 
+// NewCC - create CC secret
 func NewCC(number, holder, expire string, cvv uint16) (*CreditCard, error) {
 	exp, err := time.Parse("01/06", expire)
 	if err != nil {
@@ -27,10 +29,12 @@ func NewCC(number, holder, expire string, cvv uint16) (*CreditCard, error) {
 	return &cc, nil
 }
 
+// Scope - secret scope
 func (s *CreditCard) Scope() string {
 	return scopeCC
 }
 
+// Value - secret value
 func (s *CreditCard) Value() interface{} {
 	return s
 }

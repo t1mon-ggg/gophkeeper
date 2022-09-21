@@ -2,6 +2,7 @@ package secrets
 
 const scopeOTP = "otp"
 
+// OTP - type for otp secret
 type OTP struct {
 	Method        string
 	Issuer        string
@@ -10,6 +11,7 @@ type OTP struct {
 	RecoveryCodes []string
 }
 
+// NewOTP - create otp secret
 func NewOTP(method, issuer, secret, accountname string, recoverycodes ...string) *OTP {
 	if method != "TOTP" && method != "HOTP" {
 		return nil
@@ -24,10 +26,12 @@ func NewOTP(method, issuer, secret, accountname string, recoverycodes ...string)
 	return &otp
 }
 
+// Scope - secret scope
 func (s *OTP) Scope() string {
 	return scopeOTP
 }
 
+// Value - secret value
 func (s *OTP) Value() interface{} {
 	return s
 }

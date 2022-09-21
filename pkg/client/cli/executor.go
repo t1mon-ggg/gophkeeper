@@ -7,6 +7,7 @@ import (
 	"github.com/t1mon-ggg/gophkeeper/pkg/helpers"
 )
 
+// executor - parse user input and execute functionality
 func (c *CLI) executor(in string) {
 	prefix := strings.Split(livePrefixState.livePrefix, "/")
 	switch in {

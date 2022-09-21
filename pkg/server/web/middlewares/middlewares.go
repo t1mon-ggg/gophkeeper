@@ -11,7 +11,7 @@ var (
 	errBadReq = echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
 )
 
-// jsonHeader middleware checks application header
+// JSONHeader -  middleware checks application header
 func JSONHeader(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		header := c.Request().Header.Get("Content-Type")

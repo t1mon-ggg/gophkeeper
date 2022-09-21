@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	ErrHashValid = errors.New("hashsum is identical")
+	ErrHashValid = errors.New("hashsum is identical") // storage hashsum not changeg
 	once         sync.Once
 	_storage     Storage
 )
@@ -30,6 +30,7 @@ func init() {
 	gob.Register(&secrets.UserPass{})
 }
 
+// Storage - storage interface
 type Storage interface {
 	Save() ([]byte, error)
 	ReEncrypt() ([]byte, error)
@@ -40,27 +41,32 @@ type Storage interface {
 	ListSecrets() map[string]string
 	HashSum() string
 }
+
+// Secret - record interface
 type Secret interface {
 	Scope() string
 	Value() any
 }
 
-type keeper struct {
+// Keeper - local vault struct
+type Keeper struct {
 	secrets []Value
 	logger  logging.Logger
 	rwMutex *sync.RWMutex
 	hashsum string
 }
 
+// Value - value secret struct
 type Value struct {
 	Name        string
 	Description string
 	Record      Secret
 }
 
+// New() - initialize local storage
 func New() Storage {
 	once.Do(func() {
-		k := new(keeper)
+		k := new(Keeper)
 		k.logger = zerolog.New().WithPrefix("storage")
 		k.rwMutex = new(sync.RWMutex)
 		k.secrets = []Value{}
@@ -69,11 +75,13 @@ func New() Storage {
 	return _storage
 }
 
-func (k *keeper) HashSum() string {
+// HashSum - get current hashsum of secrets
+func (k *Keeper) HashSum() string {
 	return k.hashsum
 }
 
-func (k *keeper) Save() ([]byte, error) {
+// Save - save vault to disk
+func (k *Keeper) Save() ([]byte, error) {
 	if len(k.secrets) == 0 {
 		return []byte{}, nil
 	}
@@ -94,7 +102,8 @@ func (k *keeper) Save() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (k *keeper) ReEncrypt() ([]byte, error) {
+// ReEncrypt - reencrypt saved vault
+func (k *Keeper) ReEncrypt() ([]byte, error) {
 	if len(k.secrets) == 0 {
 		return []byte{}, nil
 	}
@@ -111,7 +120,8 @@ func (k *keeper) ReEncrypt() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (k *keeper) Load(b []byte) error {
+// Load - load to memory vault
+func (k *Keeper) Load(b []byte) error {
 	hash := helpers.GenHash(b)
 	if hash == k.HashSum() {
 		k.logger.Info(nil, "hashsum identical. skipping...")
@@ -135,7 +145,8 @@ func (k *keeper) Load(b []byte) error {
 	return nil
 }
 
-func (k *keeper) InsertSecret(name, description string, secret Secret) Storage {
+// InsertSecret - insert new secret
+func (k *Keeper) InsertSecret(name, description string, secret Secret) Storage {
 	list := k.ListSecrets()
 	if len(list) != 0 {
 		if _, ok := list[name]; ok {
@@ -154,7 +165,8 @@ func (k *keeper) InsertSecret(name, description string, secret Secret) Storage {
 	return k
 }
 
-func (k *keeper) DeleteSecret(name string) Storage {
+// DeleteSecret - delete secret
+func (k *Keeper) DeleteSecret(name string) Storage {
 	k.rwMutex.Lock()
 	defer k.rwMutex.Unlock()
 	kk := make([]Value, len(k.secrets)-1)
@@ -174,7 +186,8 @@ func (k *keeper) DeleteSecret(name string) Storage {
 	return k
 }
 
-func (k *keeper) GetSecret(name string) Secret {
+// GetSecret - get secret value
+func (k *Keeper) GetSecret(name string) Secret {
 	k.rwMutex.RLock()
 	defer k.rwMutex.RUnlock()
 	for _, v := range k.secrets {
@@ -186,7 +199,8 @@ func (k *keeper) GetSecret(name string) Secret {
 	return nil
 }
 
-func (k *keeper) ListSecrets() map[string]string {
+// ListSecrets - get list of secrets
+func (k *Keeper) ListSecrets() map[string]string {
 	k.rwMutex.RLock()
 	defer k.rwMutex.RUnlock()
 	list := make(map[string]string, len(k.secrets))

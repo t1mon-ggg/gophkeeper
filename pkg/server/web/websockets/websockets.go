@@ -12,11 +12,12 @@ import (
 )
 
 var (
-	upgrader = websocket.Upgrader{}
-	_msgs    *channels
-	_mux     *sync.Mutex
+	upgrader = websocket.Upgrader{} // websocket upgrader
+	_msgs    *channels              // websocket notify channels
+	_mux     *sync.Mutex            // mutex for notify channels
 )
 
+// observer - struct to operate with notifies
 type observer struct {
 	vault   string
 	token   string
@@ -26,26 +27,31 @@ type observer struct {
 	log     logging.Logger
 }
 
+// channels - store notify channels
 type channels struct {
 	log     logging.Logger
 	clients []*wsClients
 }
 
+// wsClients - struct to store notify channels for single vault
 type wsClients struct {
 	Vault    string
 	Channels map[string]chan models.Message
 }
 
+// init -init internal vars
 func init() {
 	_msgs = new(channels)
 	_mux = new(sync.Mutex)
 
 }
 
+// Cleanup - return ptr to nitofy channels structs
 func (wsc *channels) Cleanup() []*wsClients {
 	return wsc.clients
 }
 
+// Find - find channel to notify
 func (wsc *channels) Find(vault string) (map[string]chan models.Message, bool) {
 	if len(wsc.clients) == 0 {
 		return nil, false
@@ -67,6 +73,7 @@ func (wsc *channels) Find(vault string) (map[string]chan models.Message, bool) {
 	return nil, false
 }
 
+// Add - add new channel for notify
 func (wsc *channels) Add(vault, token string) chan models.Message {
 	if wsc.log == nil {
 		wsc.log = zerolog.New().WithPrefix("websocket-notify")
@@ -90,6 +97,8 @@ func (wsc *channels) Add(vault, token string) chan models.Message {
 	ch := wsc.Add(vault, token)
 	return ch
 }
+
+// Notify - notify user
 func (wsc *channels) Notify(vault, token string, msg models.Message) {
 	wsc.log.Trace(nil, "notify action. searching")
 	for _, vv := range wsc.clients {
@@ -109,14 +118,17 @@ func (wsc *channels) Notify(vault, token string, msg models.Message) {
 	}
 }
 
+// GetMsgChan - get pts to channels struct
 func GetMsgChan() *channels {
 	return _msgs
 }
 
+// GetMutex - get pointer to websockets channels mutex
 func GetMutex() *sync.Mutex {
 	return _mux
 }
 
+// New - new echo server
 func New(c echo.Context) error {
 	o := new(observer)
 	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
@@ -151,6 +163,7 @@ func New(c echo.Context) error {
 	return nil
 }
 
+// Start - start echo server
 func (o *observer) Start() error {
 	ch := _msgs.Add(o.vault, o.token)
 	defer func() {
@@ -192,6 +205,7 @@ func (o *observer) Start() error {
 	}
 }
 
+// Close - stop echo server
 func (o *observer) Close() {
 	o.log.Debug(nil, "websocket hadler closing")
 	close(o.signal)
