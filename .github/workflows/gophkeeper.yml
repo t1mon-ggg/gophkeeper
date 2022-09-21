@@ -19,21 +19,23 @@ jobs:
         uses: actions/checkout@v2
       - name: Build server binary
         run: |
-          t=$(git describe --tags `git rev-list --tags --max-count=1`)
-          echo $t
+          apt update
+          apt install git
+          tag=$(git tag)
+          hash=$(git rev-parse --verify HEAD)
           cd cmd/server
           mkdir release
-          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion="$t" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=${{ steps.commit.outputs.short }}' -o release/server.exe
-          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion="$t" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=${{ steps.commit.outputs.short }}' -o release/server64.exe
+          GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion="$tag" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=$hash' -o release/server.exe
+          GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion="$tag" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=$hash' -o release/server64.exe
 
-          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion="$t" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=${{ steps.commit.outputs.short }}' -o release/server
-          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion="$t" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=${{ steps.commit.outputs.short }}' -o release/server64
+          GOOS=linux GOARCH=386 go build -ldflags '-X main.buildVersion="$tag" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=$hash' -o release/server
+          GOOS=linux GOARCH=amd64 go build -ldflags '-X main.buildVersion="$tag" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=$hash' -o release/server64
 
-          GOOS=arm GOARCH=386 go build -ldflags '-X main.buildVersion="$t" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=${{ steps.commit.outputs.short }}' -o release/server_arm
-          GOOS=arm GOARCH=amd64 go build -ldflags '-X main.buildVersion="$t" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=${{ steps.commit.outputs.short }}' -o release/server_arm64
+          GOOS=arm GOARCH=386 go build -ldflags '-X main.buildVersion="$tag" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=$hash' -o release/server_arm
+          GOOS=arm GOARCH=amd64 go build -ldflags '-X main.buildVersion="$tag" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=$hash' -o release/server_arm64
 
-          GOOS=darwin GOARCH=386 go build -ldflags '-X main.buildVersion="$t" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=${{ steps.commit.outputs.short }}' -o release/server_darwin
-          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion="$t" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=${{ steps.commit.outputs.short }}' -o release/server_darwin64
+          GOOS=darwin GOARCH=386 go build -ldflags '-X main.buildVersion="$tag" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=$hash' -o release/server_darwin
+          GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion="$tag" -X main.buildDate=$(date +"%Y/%m/%d %H:%M:%S") -X main.buildCommit=$hash' -o release/server_darwin64
 
       # - name: Build server binary
       #   run: |
