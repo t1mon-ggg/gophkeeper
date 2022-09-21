@@ -15,13 +15,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Set env
-        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        run: echo "GIT_TAG=`echo $(git describe --tags --abbrev=0)`" >> $GITHUB_ENV
       - name: Build server binary
         run: |
-
-          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-          echo ${{ env.RELEASE_VERSION }}
-
 
           cd cmd/server
           mkdir release
