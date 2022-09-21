@@ -29,7 +29,7 @@ jobs:
 
           GOOS=darwin GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/server_darwin64
 
-          cd ../../cmd/server
+          cd ../client
           mkdir release
           GOOS=windows GOARCH=386 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client.exe
           GOOS=windows GOARCH=amd64 go build -ldflags '-X main.buildVersion=$tag -X main.buildDate=$ts -X main.buildCommit=$hash' -o release/client64.exe
