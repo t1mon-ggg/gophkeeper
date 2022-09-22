@@ -9,25 +9,27 @@ on:
 
 jobs:
 
-  # test:
-  #   runs-on: ubuntu-latest
-  #   container: golang:1.18
+  test:
+    runs-on: ubuntu-latest
+    container: golang:1.18
 
-  #   services:
-  #     postgres:
-  #       image: postgres
-  #       env:
-  #         POSTGRES_USER: gophkeeper
-  #         POSTGRES_PASSWORD: gophkeeper
-  #         POSTGRES_DB: gophkeeper
-  #       options: >-
-  #         --health-cmd pg_isready
-  #         --health-interval 5s
-  #         --health-timeout 5s
-  #         --health-retries 5
-  #   steps:
-  #     - name: go test
-  #       run: |
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: gophkeeper
+          POSTGRES_PASSWORD: gophkeeper
+          POSTGRES_DB: gophkeeper
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: go test
+        run: |
+          go test -race -cover -coverprofile cover.out
+          go tool -func cover.out
 
 
   build:

@@ -77,13 +77,12 @@ func (c *CLI) Start() {
 			c.log().Error(err, "remote connection failed")
 			c.log().Warn(err, "continue in standalone mode")
 			c.config.Mode = "standalone"
+		} else {
+			suggests["user> "] = activeModeUser
+			suggests[""] = activeMode
+			suggests[">>> "] = activeMode
+			suggests["history> "] = activeModeHistory
 		}
-	}
-	if c.config.Mode != "standalone" {
-		suggests["user> "] = activeModeUser
-		suggests[""] = activeMode
-		suggests[">>> "] = activeMode
-		suggests["history> "] = activeModeHistory
 	}
 	p := prompt.New(
 		c.executor,

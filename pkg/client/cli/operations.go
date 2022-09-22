@@ -330,8 +330,16 @@ func (c *CLI) confirm(checksum string) {
 	for _, key := range lst {
 		hash := helpers.GenHash([]byte(key.Publickey))
 		if hash == checksum {
-			c.api.ConfirmPGP(key.Publickey)
-			c.crypto.AddPublicKey([]byte(key.Publickey))
+			err := c.api.ConfirmPGP(key.Publickey)
+			if err != nil {
+				c.log().Error(err, "confirmation failed")
+				return
+			}
+			err = c.crypto.AddPublicKey([]byte(key.Publickey))
+			if err != nil {
+				c.log().Error(err, "failed to add key after confirm")
+				return
+			}
 			buf, err := c.storage.ReEncrypt()
 			if err != nil {
 				c.log().Error(err, "export failed")
@@ -372,23 +380,18 @@ func (c *CLI) revoke(checksum string) {
 		fmt.Println("no keys found")
 		return
 	}
+	newlist := []string{}
 	for _, key := range lst {
 		hash := helpers.GenHash([]byte(key.Publickey))
 		if hash == checksum {
-			c.api.RevokePGP(key.Publickey)
+			err := c.api.RevokePGP(key.Publickey)
+			if err != nil {
+				c.log().Error(err, "revoke failed")
+				return
+			}
+			continue
+
 		}
-	}
-	lst, err = c.api.ListPGP()
-	if err != nil {
-		c.log().Error(err, "pgp public key list can not be retrieved")
-		return
-	}
-	if len(lst) == 0 {
-		fmt.Println("no keys found")
-		return
-	}
-	newlist := []string{}
-	for _, key := range lst {
 		newlist = append(newlist, key.Publickey)
 	}
 	err = c.crypto.ReloadPublicKeys(newlist)
@@ -468,7 +471,7 @@ func (c *CLI) rollback(hash string) {
 func (c *CLI) timemachine() {
 	lst, err := c.api.Versions()
 	if err != nil {
-		c.log().Error(err, "file to get version history")
+		c.log().Error(err, "failed to get version history")
 		return
 	}
 	if len(lst) == 0 {

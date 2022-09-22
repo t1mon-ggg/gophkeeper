@@ -52,6 +52,10 @@ func (c *CLI) executor(in string) {
 					fmt.Println("no such command")
 				}
 			case "rollback":
+				if len(line) == 1 {
+					fmt.Println("invalid command format")
+					return
+				}
 				if livePrefixState.livePrefix == "history> " {
 					c.rollback(line[1])
 					return
@@ -65,12 +69,24 @@ func (c *CLI) executor(in string) {
 					fmt.Println("no such command")
 				}
 			case "revoke":
+				if len(line) == 1 {
+					fmt.Println("invalid command format")
+					return
+				}
 				if livePrefixState.livePrefix == "user> " {
+					if helpers.GenHash([]byte(c.crypto.GetPublicKey())) == line[1] {
+						c.log().Warn(nil, "can revoke self")
+						return
+					}
 					c.revoke(line[1])
 				} else {
 					fmt.Println("no such command")
 				}
 			case "confirm":
+				if len(line) == 1 {
+					fmt.Println("invalid command format")
+					return
+				}
 				if livePrefixState.livePrefix == "user> " {
 					c.confirm(line[1])
 				} else {
@@ -83,6 +99,10 @@ func (c *CLI) executor(in string) {
 					fmt.Println("no such command")
 				}
 			case "get":
+				if len(line) == 1 {
+					fmt.Println("invalid command format")
+					return
+				}
 				if livePrefixState.livePrefix == "cmd> " {
 					opts := line[2:]
 					c.get(line[1], opts...)
@@ -90,6 +110,10 @@ func (c *CLI) executor(in string) {
 					fmt.Println("no such command")
 				}
 			case "insert":
+				if len(line) == 1 {
+					fmt.Println("invalid command format")
+					return
+				}
 				if livePrefixState.livePrefix == "cmd> " {
 					c.insert(in)
 
