@@ -35,5 +35,5 @@ func main() {
 	}
 	server := server.New()
 	server.Start()
-	server.WG().Wait()
+	server.Wg.Wait()
 }

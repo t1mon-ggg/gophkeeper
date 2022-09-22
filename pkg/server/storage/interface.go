@@ -4,7 +4,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/t1mon-ggg/gophkeeper/pkg/logging"
 	"github.com/t1mon-ggg/gophkeeper/pkg/models"
 )
 
@@ -26,6 +25,4 @@ type Storage interface {
 
 	Close() error
 	Ping() error
-
-	log() logging.Logger
 }

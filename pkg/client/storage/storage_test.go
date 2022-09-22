@@ -1,11 +1,13 @@
 package storage
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/t1mon-ggg/gophkeeper/pkg/client/storage/secrets"
 	"github.com/t1mon-ggg/gophkeeper/pkg/helpers"
+	"github.com/t1mon-ggg/gophkeeper/pkg/logging/zerolog"
 )
 
 func TestClientStorage(t *testing.T) {
@@ -101,5 +103,30 @@ func TestClientStorage(t *testing.T) {
 		require.NotEmpty(t, saved)
 		require.Equal(t, k.HashSum(), helpers.GenHash(saved))
 
+	})
+	t.Run("test reenrypt", func(t *testing.T) {
+		_, err := k.ReEncrypt()
+		require.NoError(t, err)
+	})
+
+	t.Run("test reload", func(t *testing.T) {
+		_, err := k.Save()
+		require.Error(t, err)
+		s := secrets.NewText("new text secret")
+		k.InsertSecret("bla-bla", "bla", s)
+		b, err := k.Save()
+		require.NoError(t, err)
+		kk := &Keeper{
+			secrets: make([]Value, 0),
+			logger:  zerolog.New().WithPrefix("storage"),
+			rwMutex: new(sync.RWMutex),
+			hashsum: "",
+		}
+		err = kk.Load(b)
+		require.NoError(t, err)
+		err = kk.Load(b)
+		require.Error(t, err)
+		err = kk.Load(nil)
+		require.NoError(t, err)
 	})
 }

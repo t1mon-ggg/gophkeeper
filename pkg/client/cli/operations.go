@@ -455,7 +455,7 @@ func (c *CLI) rollback(hash string) {
 	if err != nil {
 		c.log().Error(err, "pull for rollback failed")
 	}
-	buf, err := c.crypto.DecryptWithKey(v)
+	buf, err := c.crypto.DecryptWithKeys(v)
 	if err != nil {
 		c.log().Error(err, "decryption for rollback failed")
 	}

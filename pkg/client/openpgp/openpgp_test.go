@@ -144,7 +144,7 @@ func TestGenerateEncryptionAndDecryption(t *testing.T) {
 	testdata := []byte("very secret")
 	encrypted, err := p.EncryptWithKeys(testdata)
 	require.NoError(t, err)
-	decrypted, err := p.DecryptWithKey(encrypted)
+	decrypted, err := p.DecryptWithKeys(encrypted)
 	require.NoError(t, err)
 	require.Equal(t, testdata, decrypted)
 }
@@ -210,7 +210,7 @@ func TestDecryptEmpty(t *testing.T) {
 	require.NoError(t, err)
 	err = p.GeneratePair()
 	require.NoError(t, err)
-	_, err = p.DecryptWithKey([]byte{})
+	_, err = p.DecryptWithKeys([]byte{})
 	require.Error(t, err)
 
 }
@@ -275,10 +275,10 @@ func TestG(t *testing.T) {
 	err = p.ReloadPublicKeys([]string{"test"})
 	require.Error(t, err)
 
-	_, err = p.DecryptWithKey([]byte("data"))
+	_, err = p.DecryptWithKeys([]byte("data"))
 	require.Error(t, err)
 
-	_, err = p.DecryptWithKey([]byte(encrypted))
+	_, err = p.DecryptWithKeys([]byte(encrypted))
 	require.Error(t, err)
 	err = os.MkdirAll("./openpgp", 0777)
 	require.NoError(t, err)

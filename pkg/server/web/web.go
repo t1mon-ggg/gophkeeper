@@ -102,34 +102,38 @@ func (s *Server) chanCleaner() {
 
 // Start - func to start web-api
 //  wg - application WaitGroup
-func (s *Server) Start(wg *sync.WaitGroup) {
+func (s *Server) Start(wg *sync.WaitGroup) error {
 	s.wg = wg
 	s.wg.Add(1)
 	err := s.echo.StartTLS(config.New().WebBind, "./ssl/server.crt", "./ssl/server.pem")
 	if err != nil && !strings.Contains(err.Error(), "Server closed") {
-		s.log.Fatal(err, "start web failed with error")
+		s.log.Error(err, "filed to start")
+		return err
 	}
+	return nil
 }
 
 // Stop - gracefull shutdown of web api with shutdown timeout in 10 seconds
-func (s *Server) Stop() {
+func (s *Server) Stop() error {
 	close(s.sig)
 	s.log.Info(nil, "Graceful shutdown in progress...")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err := s.echo.Shutdown(ctx)
 	if err != nil {
-		s.log.Fatal(err, "shutting down ends with error")
+		s.log.Error(err, "shutting down ends with error")
+		return err
 	}
 	s.log.Info(nil, "Web server stopped")
 	s.wg.Done()
+	return nil
 }
 
 // applyMiddlewares - apply middleware set to echo framework instance
 func (s *Server) applyMiddlewares() *Server {
 	s.echo.Use(mw.Gzip())
 	s.echo.Use(mw.Decompress())
-	// s.echo.Use(mw.Recover())
+	s.echo.Use(mw.Recover())
 	s.echo.Use(mw.RequestLoggerWithConfig(mw.RequestLoggerConfig{
 		LogURI:      true,
 		LogStatus:   true,

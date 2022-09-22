@@ -38,8 +38,19 @@ type OpenPGP struct {
 	Private    *pgpcrypto.KeyRing // private keyring
 }
 
+type OPENPGP interface {
+	GetPublicKey() string
+	AddPublicKey(armored []byte) error
+	AddPrivateKey(armored []byte) error
+	GeneratePair() error
+	ReloadPublicKeys(keys []string) error
+	ReadFolder(name string) error
+	EncryptWithKeys(data []byte) ([]byte, error)
+	DecryptWithKeys(data []byte) ([]byte, error)
+}
+
 // New() - pgp initialization
-func New() (*OpenPGP, error) {
+func New() (OPENPGP, error) {
 	var err error
 	once.Do(func() {
 		p, err := emptyKeyring()
@@ -337,7 +348,7 @@ func (p *OpenPGP) EncryptWithKeys(data []byte) ([]byte, error) {
 }
 
 // DecryptWithKey - decrypt data with PC's private key
-func (p *OpenPGP) DecryptWithKey(data []byte) ([]byte, error) {
+func (p *OpenPGP) DecryptWithKeys(data []byte) ([]byte, error) {
 	if len(data) == 0 {
 		log.Warn(errors.New("decryptable data is missing"), "nothing to encrypt")
 		return nil, errPGP

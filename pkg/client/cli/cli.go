@@ -23,7 +23,7 @@ type CLI struct {
 	wg      *sync.WaitGroup
 	storage storage.Storage
 	config  *config.Config
-	crypto  *openpgp.OpenPGP
+	crypto  openpgp.OPENPGP
 	logger  logging.Logger
 	api     remote.Actions
 }
@@ -110,7 +110,11 @@ func New(wg *sync.WaitGroup) *CLI {
 	cli.wg = wg
 	cli.config = config.New()
 	cli.storage = storage.New()
-	cli.crypto, _ = openpgp.New()
+	c, err := openpgp.New()
+	if err != nil {
+		cli.log().Fatal(err, "openpgpg initialization failed")
+	}
+	cli.crypto = c
 	if cli.config.Mode != "standalone" {
 		cli.api = web.New()
 	}
@@ -185,7 +189,7 @@ func (c *CLI) remote() error {
 			if err != nil {
 				c.log().Fatal(err, "pull latest failed")
 			}
-			secret, err := c.crypto.DecryptWithKey(body)
+			secret, err := c.crypto.DecryptWithKeys(body)
 			if err != nil {
 				c.log().Fatal(err, "decrypt new body failed")
 			}

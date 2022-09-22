@@ -21,7 +21,7 @@ type KeeperClient struct {
 	log     logging.Logger
 	config  *config.Config
 	storage storage.Storage
-	crypto  *openpgp.OpenPGP
+	crypto  openpgp.OPENPGP
 	cli     *cli.CLI
 }
 
@@ -67,7 +67,7 @@ func New() *KeeperClient {
 		kc.log.Fatal(err, "storage can not be read")
 	}
 	if len(buf) != 0 {
-		msg, err := kc.crypto.DecryptWithKey(buf)
+		msg, err := kc.crypto.DecryptWithKeys(buf)
 		if err != nil {
 			kc.log.Fatal(err, "storage can not be decrypted")
 		}

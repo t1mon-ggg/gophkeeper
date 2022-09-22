@@ -30,18 +30,6 @@ func init() {
 	gob.Register(&secrets.UserPass{})
 }
 
-// Storage - storage interface
-type Storage interface {
-	Save() ([]byte, error)
-	ReEncrypt() ([]byte, error)
-	Load(b []byte) error
-	InsertSecret(name, description string, secret Secret) Storage
-	DeleteSecret(name string) Storage
-	GetSecret(name string) Secret
-	ListSecrets() map[string]string
-	HashSum() string
-}
-
 // Secret - record interface
 type Secret interface {
 	Scope() string
@@ -125,7 +113,7 @@ func (k *Keeper) Load(b []byte) error {
 	hash := helpers.GenHash(b)
 	if hash == k.HashSum() {
 		k.logger.Info(nil, "hashsum identical. skipping...")
-		return nil
+		return ErrHashValid
 	}
 	k.rwMutex.Lock()
 	defer k.rwMutex.Unlock()
