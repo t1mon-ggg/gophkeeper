@@ -127,14 +127,13 @@ func (c *CLI) remote() error {
 	if err != nil {
 		if err.Error() == "internal server error" || err.Error() == "bad request" {
 			helpers.RestoreTermState()
-			os.Exit(1)
+			c.log().Fatal(err, "start failed")
 		}
 		c.log().Warn(err, "authorization failed. Try to Signup")
 		err := c.api.Register(c.config.Username, c.config.Password, c.crypto.GetPublicKey())
 		if err != nil {
-			c.log().Error(err, "registration failed. Please contact administrator")
 			helpers.RestoreTermState()
-			os.Exit(1)
+			c.log().Fatal(err, "registration failed. Please contact administrator")
 		}
 		signup = true
 	}

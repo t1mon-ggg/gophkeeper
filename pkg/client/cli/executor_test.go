@@ -79,6 +79,8 @@ func TestUserInput(t *testing.T) {
 
 		actions.EXPECT().ListPGP().Return([]models.PGP{}, nil),
 
+		actions.EXPECT().ListPGP().Return([]models.PGP{{Date: time.Now(), Publickey: "PublicKey", Confirmed: false}}, nil),
+
 		//revoke action
 		crypto.EXPECT().GetPublicKey().Return("321"),
 
@@ -344,6 +346,11 @@ func TestUserInput(t *testing.T) {
 			name:       "roster action",
 			in:         "roster",
 			livePrefix: "cmd> ",
+		},
+		{
+			name:       "roster action",
+			in:         "roster",
+			livePrefix: "user> ",
 		},
 		{
 			name:       "roster action",
