@@ -13,7 +13,8 @@ import (
 func TestClientStorage(t *testing.T) {
 	k := New()
 	up := secrets.NewUserPass("user", "password")
-	otp := secrets.NewOTP("TOTP", "https://localhost.ltd", "SeCrEt", "1234", "abcd")
+	otp, err := secrets.NewOTP("TOTP", "https://localhost.ltd", "SeCrEt", "1234", "abcd")
+	require.NoError(t, err)
 	cc, err := secrets.NewCC("1234123412341234", "Mr.CardHolder", "01/23", 123)
 	require.NoError(t, err)
 	txt := secrets.NewText("this is secret text")

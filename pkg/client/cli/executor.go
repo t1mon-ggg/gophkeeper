@@ -147,40 +147,40 @@ func (c *CLI) executor(in string) {
 		var found bool
 		newprefix := []string{}
 		if len(prefix) == 1 {
-			p := strings.Split(prefix[0], ">")
-			if len(p) == 4 {
-				p = []string{}
+			// p := strings.Split(prefix[0], ">")
+			// if len(p) == 4 {
+			// 	p = []string{}
+			// }
+			// if len(p) > 1 {
+			// 	for i := 0; i <= len(prefix)-1; i++ {
+			// 		newprefix = append(newprefix, prefix[i])
+			// 	}
+			// 	for _, t := range suggests[livePrefixState.livePrefix] {
+			// 		if t.Text == in {
+			// 			found = true
+			// 		}
+			// 	}
+			// 	if found {
+			// 		livePrefixState.livePrefix = strings.TrimSuffix(strings.TrimSpace(strings.Join(newprefix, "/")), ">") + "/" + strings.TrimSpace(in) + "> "
+			// 	} else {
+			// 		fmt.Println("no such command")
+			// 	}
+			// } else {
+			for i := 0; i <= len(prefix)-1; i++ {
+				newprefix = append(newprefix, prefix[i])
 			}
-			if len(p) > 1 {
-				for i := 0; i <= len(prefix)-1; i++ {
-					newprefix = append(newprefix, prefix[i])
+			for _, t := range suggests[livePrefixState.livePrefix] {
+				if t.Text == in {
+					found = true
 				}
-				for _, t := range suggests[livePrefixState.livePrefix] {
-					if t.Text == in {
-						found = true
-					}
-				}
-				if found {
-					livePrefixState.livePrefix = strings.TrimSuffix(strings.TrimSpace(strings.Join(newprefix, "/")), ">") + "/" + strings.TrimSpace(in) + "> "
-				} else {
-					fmt.Println("no such command")
-				}
+			}
+			if found {
+				livePrefixState.livePrefix = strings.TrimSpace(in) + "> "
 			} else {
-				for i := 0; i <= len(prefix)-1; i++ {
-					newprefix = append(newprefix, prefix[i])
-				}
-				for _, t := range suggests[livePrefixState.livePrefix] {
-					if t.Text == in {
-						found = true
-					}
-				}
-				if found {
-					livePrefixState.livePrefix = strings.TrimSpace(in) + "> "
-				} else {
-					fmt.Println("no such command")
-				}
+				fmt.Println("no such command")
 			}
 		}
+		// }
 		if len(prefix) > 1 {
 			for i := 0; i <= len(prefix)-1; i++ {
 				newprefix = append(newprefix, prefix[i])

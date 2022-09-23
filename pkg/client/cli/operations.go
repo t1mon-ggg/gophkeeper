@@ -96,7 +96,11 @@ func (c *CLI) insert(in string) {
 		if method == "" {
 			method = "TOTP"
 		}
-		otp := secrets.NewOTP(method, issuer, secret, username, codes...)
+		otp, err := secrets.NewOTP(method, issuer, secret, username, codes...)
+		if err != nil {
+			c.log().Error(err, "invalid user input")
+			return
+		}
 		c.storage.InsertSecret(name, description, otp)
 		return
 	case "userpass":
@@ -275,6 +279,7 @@ func (c *CLI) get(name string, opts ...string) {
 			})
 			if err != nil {
 				c.log().Error(err, "secret can not be displayed")
+				return
 			}
 			fmt.Printf("Code %s\n", code)
 		case "HOTP":

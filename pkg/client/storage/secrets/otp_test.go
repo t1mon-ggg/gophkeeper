@@ -14,13 +14,15 @@ func TestOTP(t *testing.T) {
 		AccountName:   "username",
 		RecoveryCodes: []string{"1234", "abcd"},
 	}
-	tt := NewOTP("TOTP", "https://localhost.ltd", "owivneri39nv3", "username", "1234", "abcd")
+	tt, err := NewOTP("TOTP", "https://localhost.ltd", "owivneri39nv3", "username", "1234", "abcd")
+	require.NoError(t, err)
 	require.Equal(t, scopeOTP, tt.Scope())
 	require.Equal(t, exp, tt.Value().(*OTP))
 }
 
 func TestOTPWrong(t *testing.T) {
-	tt := NewOTP("XOTP", "https://localhost.ltd", "owivneri39nv3", "username", "1234", "abcd")
+	tt, err := NewOTP("XOTP", "https://localhost.ltd", "owivneri39nv3", "username", "1234", "abcd")
+	require.Error(t, err)
 	require.Equal(t, scopeOTP, tt.Scope())
 	require.Nil(t, tt.Value().(*OTP))
 }

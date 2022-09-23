@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 	"testing"
@@ -27,6 +28,12 @@ func TestUserInput(t *testing.T) {
 	crypto := mockOpenPGP.NewMockOPENPGP(ctl)
 
 	var errDummy = errors.New("dummy")
+
+	testCC, _ := secrets.NewCC("1234", "mr. cardholder", "01/01", 123)
+	testValidTOTP, _ := secrets.NewOTP("TOTP", "localhost", "JBSWY3DPEHPK3PXP", "accountname", "1234", "1234")
+	testValidHOTP, _ := secrets.NewOTP("HOTP", "issuer", "JBSWY3DPEHPK3PXP", "account", "1234", "1234")
+	testInvalidTOTP := &secrets.OTP{Method: "TOTP", Issuer: "issuer", Secret: "1234", AccountName: "account"}
+	testInvalidXOTP := &secrets.OTP{Method: "XOTP", Issuer: "issuer", Secret: "1234", AccountName: "account"}
 
 	gomock.InOrder(
 		// save actions
@@ -184,6 +191,40 @@ func TestUserInput(t *testing.T) {
 
 		//delete action
 		db.EXPECT().DeleteSecret("1234").Return(db),
+
+		//get action
+		db.EXPECT().GetSecret("1234").Return(nil),
+
+		db.EXPECT().GetSecret("1234").Return(secrets.NewText("hello")),
+
+		db.EXPECT().GetSecret("1234").Return(testCC),
+
+		db.EXPECT().GetSecret("1234").Return(secrets.NewUserPass("user", "pass")),
+
+		db.EXPECT().GetSecret("1234").Return(testValidTOTP),
+
+		db.EXPECT().GetSecret("1234").Return(testValidHOTP),
+
+		db.EXPECT().GetSecret("1234").Return(nil),
+
+		db.EXPECT().GetSecret("1234").Return(secrets.NewBinary([]byte("hello"))),
+
+		db.EXPECT().GetSecret("1234").Return(secrets.NewBinary([]byte("hello"))),
+
+		db.EXPECT().GetSecret("1234").Return(testInvalidTOTP),
+
+		db.EXPECT().GetSecret("1234").Return(testInvalidXOTP),
+
+		// insert action
+		db.EXPECT().InsertSecret("testText", "test", secrets.NewText("test")),
+
+		db.EXPECT().InsertSecret("testCC", "test", testCC),
+
+		db.EXPECT().InsertSecret("testUP", "test", secrets.NewUserPass("user", "pass")),
+
+		db.EXPECT().InsertSecret("testOTP", "test", testValidTOTP),
+
+		db.EXPECT().InsertSecret("testBin", "test", secrets.NewBinary([]byte("hello\n"))),
 	)
 
 	cli := &CLI{
@@ -216,6 +257,13 @@ func TestUserInput(t *testing.T) {
 			livePrefix:   ">>> ",
 			testprefix:   true,
 			resultprefix: "cmd> ",
+		},
+		{
+			name:         "empty action",
+			in:           "cmd",
+			livePrefix:   "cmd/cmd> ",
+			testprefix:   true,
+			resultprefix: "cmd/cmd> ",
 		},
 		// save action
 		{
@@ -503,8 +551,145 @@ func TestUserInput(t *testing.T) {
 			in:         "delete 1234",
 			livePrefix: "cmd> ",
 		},
+		// get action
+		{
+			name:       "get action",
+			in:         "get",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get",
+			livePrefix: "user> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234 secret.txt",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "get action",
+			in:         "get 1234 1234",
+			livePrefix: "user> ",
+		},
+		//insert action
+		{
+			name:       "insert action",
+			in:         "insert",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "insert action",
+			in:         "insert testText anytext text test description test",
+			livePrefix: "user> ",
+		},
+		{
+			name:       "insert action",
+			in:         "insert",
+			livePrefix: "user> ",
+		},
+		{
+			name:       "insert action",
+			in:         "insert testText anytext text test description test",
+			livePrefix: "cmd> ",
+		},
+
+		{
+			name:       "insert action",
+			in:         "insert testCC creditcard expire 01/01 cvv 123 number 1234 holder mr. cardholder description test",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "insert action",
+			in:         "insert testCC creditcard expire 01/01 cvv abc number 1234 holder mr. cardholder description test",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "insert action",
+			in:         "insert testUP userpass username user password pass description test",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "insert action",
+			in:         "insert testUP userpass username user password pass",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "insert action",
+			in:         "insert testUP",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "insert action",
+			in:         "insert testOTP otp method TOTP secret JBSWY3DPEHPK3PXP issuer localhost username accountname recoverycodes 1234 1234 description test",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "insert action",
+			in:         "insert testBin anybinary test.txt",
+			livePrefix: "cmd> ",
+		},
+		{
+			name:       "insert action",
+			in:         "insert testBin anybinary path validbin.txt description test",
+			livePrefix: "cmd> ",
+		},
 	}
 	livePrefixState.isEnable = true
+	f, err := os.OpenFile("validbin.txt", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0755)
+	require.NoError(t, err)
+	fmt.Fprintln(f, "hello")
+	f.Close()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			livePrefixState.livePrefix = tt.livePrefix
@@ -513,7 +698,9 @@ func TestUserInput(t *testing.T) {
 				require.Equal(t, tt.resultprefix, livePrefixState.livePrefix)
 			}
 			os.Remove("secrets.db")
+			os.Remove("secret.txt")
 		})
 	}
+	os.Remove("validbin.txt")
 
 }

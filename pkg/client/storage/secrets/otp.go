@@ -1,5 +1,7 @@
 package secrets
 
+import "errors"
+
 const scopeOTP = "otp"
 
 // OTP - type for otp secret
@@ -12,9 +14,9 @@ type OTP struct {
 }
 
 // NewOTP - create otp secret
-func NewOTP(method, issuer, secret, accountname string, recoverycodes ...string) *OTP {
+func NewOTP(method, issuer, secret, accountname string, recoverycodes ...string) (*OTP, error) {
 	if method != "TOTP" && method != "HOTP" {
-		return nil
+		return nil, errors.New("not supported method")
 	}
 	otp := OTP{
 		Method:        method,
@@ -23,7 +25,7 @@ func NewOTP(method, issuer, secret, accountname string, recoverycodes ...string)
 		AccountName:   accountname,
 		RecoveryCodes: recoverycodes,
 	}
-	return &otp
+	return &otp, nil
 }
 
 // Scope - secret scope
