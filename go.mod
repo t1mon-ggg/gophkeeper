@@ -15,7 +15,6 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jedib0t/go-pretty/v6 v6.3.8
 	github.com/labstack/echo/v4 v4.9.0
-	github.com/labstack/gommon v0.3.1
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/pquerna/otp v1.3.0
 	github.com/rs/zerolog v1.27.0
@@ -48,6 +47,7 @@ require (
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/labstack/gommon v0.3.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
