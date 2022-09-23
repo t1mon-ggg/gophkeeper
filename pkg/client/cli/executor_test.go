@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
 	"github.com/t1mon-ggg/gophkeeper/pkg/client/config"
 	mockOpenPGP "github.com/t1mon-ggg/gophkeeper/pkg/client/openpgp/mock_openpgp"
 	mockActions "github.com/t1mon-ggg/gophkeeper/pkg/client/remote/mock_actions"
