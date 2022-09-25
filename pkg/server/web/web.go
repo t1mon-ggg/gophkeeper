@@ -59,11 +59,11 @@ func New() *Server {
 	static.ApplyStatic(s.echo)
 	s.sig = make(chan struct{})
 	s.createRouter()
-	go s.chanCleaner()
 	return s
 }
 
 func (s *Server) chanCleaner() {
+	s.wg.Add(1)
 	mux := websockets.GetMutex()
 	chs := websockets.GetMsgChan().Cleanup()
 	ticker := time.NewTicker(10 * time.Second)
@@ -105,6 +105,7 @@ func (s *Server) chanCleaner() {
 func (s *Server) Start(wg *sync.WaitGroup) error {
 	s.wg = wg
 	s.wg.Add(1)
+	go s.chanCleaner()
 	err := s.echo.StartTLS(config.New().WebBind, "./ssl/server.crt", "./ssl/server.pem")
 	if err != nil && !strings.Contains(err.Error(), "Server closed") {
 		s.log.Error(err, "filed to start")
@@ -172,7 +173,7 @@ func (s *Server) createRouter() *Server {
 		ErrorHandlerWithContext: auth.JWTErrorHandlerWithContext,
 	}
 	restricted.Use(mw.JWTWithConfig(jwtconfig))
-	restricted.POST("/remove", s.remove)          // user deletion handler
+	restricted.DELETE("/remove", s.remove)        // user deletion handler
 	restricted.POST("/push", s.save)              // api save handler
 	restricted.GET("/pgp/list", s.listpgp)        // api pgp list public keys
 	restricted.POST("/pgp/add", s.addpgp)         // api pgp add public keys

@@ -13,6 +13,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/jackc/pgx/v4 v4.17.2
+	github.com/jarcoal/httpmock v1.2.0
 	github.com/jedib0t/go-pretty/v6 v6.3.8
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d

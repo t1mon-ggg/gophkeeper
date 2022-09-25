@@ -42,6 +42,7 @@ type WebClient struct {
 // New() -initialize http client
 func New() remote.Actions {
 	client := new(WebClient)
+	client.wsSig = make(chan struct{})
 	once.Do(func() {
 		jar, err := cookiejar.New(nil)
 		if err != nil {
@@ -151,7 +152,7 @@ func (c *WebClient) Register(username, password, public string) error {
 func (c *WebClient) Delete() error {
 	response, err := c.client.R().
 		SetHeader("Content-Type", "application/json").
-		Post("api/v1/keeper/remove")
+		Delete("api/v1/keeper/remove")
 	if err != nil {
 		c.log().Error(err, "client deletion failed")
 		return err
@@ -371,7 +372,6 @@ func (c *WebClient) Close() error {
 
 // NewStream - initialize and start websocket connection
 func (c *WebClient) NewStream() error {
-	c.wsSig = make(chan struct{})
 	r := config.New().RemoteHTTP
 	rr := strings.Split(r, "/")
 	remote := rr[len(rr)-1]
