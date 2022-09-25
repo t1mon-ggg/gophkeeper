@@ -50,8 +50,16 @@ func client(t *testing.T) *resty.Client {
 	return client
 }
 
-func login() (*resty.Response, error) {
-	return nil, nil
+func login(c *resty.Client) (*resty.Response, error) {
+	response, err := c.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(models.User{
+			Username:  "test",
+			Password:  "test",
+			PublicKey: "test",
+		}).
+		Post("api/v1/signin")
+	return response, err
 }
 
 func TestServer(t *testing.T) {
@@ -89,6 +97,20 @@ func TestServer(t *testing.T) {
 
 		db.EXPECT().SignIn(models.User{Username: "test", Password: "test", PublicKey: "test"}, ip).Return(nil),
 		db.EXPECT().ListPGP("test", ip).Return([]models.PGP{{Date: time.Now(), Publickey: "test1", Confirmed: false}}, nil),
+
+		//delete
+		db.EXPECT().SignIn(models.User{Username: "test", Password: "test", PublicKey: "test"}, ip).Return(nil),
+		db.EXPECT().ListPGP("test", ip).Return([]models.PGP{{Date: time.Now(), Publickey: "test", Confirmed: true}}, nil),
+		db.EXPECT().DeleteUser("test", ip).Return(nil),
+
+		//delete
+		db.EXPECT().SignIn(models.User{Username: "test", Password: "test", PublicKey: "test"}, ip).Return(nil),
+		db.EXPECT().ListPGP("test", ip).Return([]models.PGP{{Date: time.Now(), Publickey: "test", Confirmed: true}}, nil),
+		db.EXPECT().DeleteUser("test", ip).Return(errDummy),
+
+		//register
+		db.EXPECT().SignUp("test", "test", ip).Return(nil),
+		db.EXPECT().AddPGP("test", "test", true, ip).Return(nil),
 	)
 
 	wg := new(sync.WaitGroup)
@@ -209,6 +231,107 @@ func TestServer(t *testing.T) {
 		}
 
 	})
+
+	t.Run("test remove", func(t *testing.T) {
+		c := client(t)
+		c.SetBaseURL(fmt.Sprintf("https://%s", webbind))
+
+		type test struct {
+			name string
+
+			want bool
+			code int
+		}
+
+		tests := []test{
+			{
+				name: "successfull delete",
+				want: false,
+				code: http.StatusAccepted,
+			},
+			{
+				name: "fail delete",
+				want: false,
+				code: http.StatusInternalServerError,
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				r, err := login(c)
+				require.Equal(t, http.StatusOK, r.StatusCode())
+				require.NoError(t, err)
+				response, _ := c.R().
+					SetHeader("Content-Type", "application/json").
+					Delete("api/v1/keeper/remove")
+				require.Equal(t, tt.code, response.StatusCode())
+				if response.StatusCode() == http.StatusOK {
+					require.NotEmpty(t, response.Cookies())
+					var token bool
+					for _, cookie := range response.Cookies() {
+						if cookie.Name == "token" {
+							token = true
+							require.NotEmpty(t, cookie.Value)
+						}
+					}
+					require.True(t, token)
+				}
+			})
+		}
+
+	})
+
+	t.Run("test register", func(t *testing.T) {
+		c := client(t)
+		c.SetBaseURL(fmt.Sprintf("https://%s", webbind))
+
+		type test struct {
+			name string
+			body models.User
+
+			want bool
+			code int
+		}
+
+		tests := []test{
+			{
+				name: "successfull register",
+				body: models.User{
+					Username:  "test",
+					Password:  "test",
+					PublicKey: "test",
+				},
+				want: false,
+				code: http.StatusCreated,
+			},
+			// {
+			// 	name: "fail delete",
+			// 	want: false,
+			// 	code: http.StatusInternalServerError,
+			// },
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				response, _ := c.R().
+					SetHeader("Content-Type", "application/json").
+					SetBody(tt.body).
+					Post("api/v1/signup")
+				require.Equal(t, tt.code, response.StatusCode())
+				if response.StatusCode() == http.StatusOK {
+					require.NotEmpty(t, response.Cookies())
+					var token bool
+					for _, cookie := range response.Cookies() {
+						if cookie.Name == "token" {
+							token = true
+							require.NotEmpty(t, cookie.Value)
+						}
+					}
+					require.True(t, token)
+				}
+			})
+		}
+
+	})
+
 	err = s.Stop()
 	require.NoError(t, err)
 	s.wg.Wait()
