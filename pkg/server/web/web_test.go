@@ -3,6 +3,7 @@ package web
 import (
 	"crypto/rand"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -68,10 +69,26 @@ func TestServer(t *testing.T) {
 	defer ctl.Finish()
 	db := mockStorage.NewMockStorage(ctl)
 	ip := net.ParseIP("127.0.0.1")
+	errDummy := errors.New("dummy error")
+
 	gomock.InOrder(
 		//signin
 		db.EXPECT().SignIn(models.User{Username: "test", Password: "test", PublicKey: "test"}, ip).Return(nil),
 		db.EXPECT().ListPGP("test", ip).Return([]models.PGP{{Date: time.Now(), Publickey: "test", Confirmed: true}}, nil),
+
+		db.EXPECT().SignIn(models.User{Username: "test", Password: "test", PublicKey: "test"}, ip).Return(errDummy),
+
+		db.EXPECT().SignIn(models.User{Username: "test", Password: "test", PublicKey: "test"}, ip).Return(nil),
+		db.EXPECT().ListPGP("test", ip).Return([]models.PGP{}, nil),
+
+		db.EXPECT().SignIn(models.User{Username: "test", Password: "test", PublicKey: "test"}, ip).Return(nil),
+		db.EXPECT().ListPGP("test", ip).Return(nil, errDummy),
+
+		db.EXPECT().SignIn(models.User{Username: "test", Password: "test", PublicKey: "test"}, ip).Return(nil),
+		db.EXPECT().ListPGP("test", ip).Return([]models.PGP{{Date: time.Now(), Publickey: "test", Confirmed: false}}, nil),
+
+		db.EXPECT().SignIn(models.User{Username: "test", Password: "test", PublicKey: "test"}, ip).Return(nil),
+		db.EXPECT().ListPGP("test", ip).Return([]models.PGP{{Date: time.Now(), Publickey: "test1", Confirmed: false}}, nil),
 	)
 
 	wg := new(sync.WaitGroup)
@@ -114,20 +131,70 @@ func TestServer(t *testing.T) {
 				want: false,
 				code: http.StatusOK,
 			},
+			{
+				name: "fail",
+				body: models.User{
+					Username:  "test",
+					Password:  "test",
+					PublicKey: "test",
+				},
+
+				want: false,
+				code: http.StatusUnauthorized,
+			},
+			{
+				name: "fail",
+				body: models.User{
+					Username:  "test",
+					Password:  "test",
+					PublicKey: "test",
+				},
+
+				want: false,
+				code: http.StatusInternalServerError,
+			},
+			{
+				name: "fail",
+				body: models.User{
+					Username:  "test",
+					Password:  "test",
+					PublicKey: "test",
+				},
+
+				want: false,
+				code: http.StatusInternalServerError,
+			},
+			{
+				name: "fail",
+				body: models.User{
+					Username:  "test",
+					Password:  "test",
+					PublicKey: "test",
+				},
+
+				want: false,
+				code: http.StatusAlreadyReported,
+			},
+			{
+				name: "fail",
+				body: models.User{
+					Username:  "test",
+					Password:  "test",
+					PublicKey: "test",
+				},
+
+				want: false,
+				code: http.StatusForbidden,
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				var got bool
-				response, err := c.R().
+				response, _ := c.R().
 					SetHeader("Content-Type", "application/json").
 					SetBody(tt.body).
 					Post("api/v1/signin")
-				if err != nil {
-					got = true
-				}
-				require.Equal(t, tt.want, got)
-				if !tt.want {
-					require.Equal(t, tt.code, response.StatusCode())
+				require.Equal(t, tt.code, response.StatusCode())
+				if response.StatusCode() == http.StatusOK {
 					require.NotEmpty(t, response.Cookies())
 					var token bool
 					for _, cookie := range response.Cookies() {

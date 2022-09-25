@@ -250,6 +250,10 @@ func (s *Server) signin(c echo.Context) error {
 		s.log.Error(err, "user can not be validated")
 		return errIntSrvErr
 	}
+	if len(keys) == 0 {
+		s.log.Error(err, "public key not registered")
+		return errIntSrvErr
+	}
 	var found bool
 	hash := helpers.GenHash([]byte(user.PublicKey))
 	for _, key := range keys {
