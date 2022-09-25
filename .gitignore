@@ -1,0 +1,8 @@
+*.db
+server.crt
+server.pem
+ssl/
+cover.out
+cover-*.out
+coverage.html
+coverage-*.html
